@@ -1,11 +1,18 @@
+--! @file lfsr_internal_ea.vhd
+--! @brief library entity containing 
+
+
+--! Standard Library
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+--! BoostDSP Library
 library BoostDSP;
 use BoostDSP.util_pkg.all;
 use BoostDSP.lfsr_pkg.all;
 
+--!
 entity lfsr_internal is
   generic (
     INTERNAL_SIZE : positive := 8;    -- Set internal size of LFSR

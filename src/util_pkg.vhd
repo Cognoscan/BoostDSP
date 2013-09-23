@@ -14,6 +14,9 @@ end package;
 
 package body util_pkg is
 
+  type unsigned_vector is array (natural range <>) of unsigned;
+  type signed_vector is array (natural range <>) of signed;
+
   -- Find maximum of two integers (helper function)
   function max (i,j : integer) return integer is
   begin
