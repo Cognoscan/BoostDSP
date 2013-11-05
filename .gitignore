@@ -1,0 +1,13 @@
+#Ignores for VHDL
+
+# Ignore Vim Swapfiles
+*.swp
+
+# Ignore complied directories
+boostdsp/
+boostdsp_tb/
+
+vsim.wlf
+modelsim.ini
+transcript
+vsim_stacktrace.vstf
