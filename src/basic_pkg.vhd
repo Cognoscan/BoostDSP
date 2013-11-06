@@ -24,6 +24,7 @@ use ieee.math_real.all;
 use ieee.numeric_std.all;
 
 use work.fixed_pkg.all;
+use work.util_pkg.all;
 
 package basic_pkg is
 
@@ -65,6 +66,42 @@ package basic_pkg is
            symbol_out   : out std_logic_vector --! Outgoing symbol
          );
   end component;
+
+  component symbolizer_even is
+    port (
+           clk          : in std_logic; --! System clock
+           rst          : in std_logic; --! System reset
+           data_in      : in std_logic_vector; --! Incoming data
+           busy         : out std_logic; --! Busy (cannot fetch data)
+           data_valid   : in std_logic; --! Strobe when data_in valid
+           fetch_symbol : in std_logic; --! System fetching next symbol
+           symbol_out   : out std_logic_vector --! Outgoing symbol
+         );
+  end component;
+
+  constant bpsk_i : real_vector(0 to 1) := ( 1.0, -1.0 );
+  constant bpsk_q : real_vector(0 to 1) := ( 1.0, -1.0 );
+
+  constant qpsk_i : real_vector(0 to 3) := ( -1.0, -1.0, 1.0, 1.0 );
+  constant qpsk_q : real_vector(0 to 3) := ( -1.0, 1.0, -1.0, 1.0 );
+
+  constant eight_psk_i : real_vector(0 to 7) :=
+    ( -0.7071, -1.0, 0.0, -0.7071, 0.0, 0.7071, 0.7071, 1.0 );
+  constant eight_psk_q : real_vector(0 to 7) :=
+    ( -0.7071, 0.0, 1.0, 0.7071, -1.0, -0.7071, 0.7071, 0.0 );
+
+  constant qam16_i : real_vector(0 to 15) := (
+        -1.0,     -1.0,     -1.0,     -1.0,
+    (-1.0/3), (-1.0/3), (-1.0/3), (-1.0/3),
+     (1.0/3),  (1.0/3),  (1.0/3),  (1.0/3),
+         1.0,      1.0,      1.0,    1.0 );
+
+  constant qam16_q : real_vector(0 to 15) := (
+    -1.0, (-1.0/3), 1.0, (1.0/3),
+    -1.0, (-1.0/3), 1.0, (1.0/3),
+    -1.0, (-1.0/3), 1.0, (1.0/3),
+    -1.0, (-1.0/3), 1.0, (1.0/3));
+
 
 end package;
 
