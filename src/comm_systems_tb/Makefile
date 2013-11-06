@@ -10,7 +10,7 @@ include ../../Makefile.inc
 
 VHDL = $(shell find -type f -name '*.vhd')
 
-COMPILED = $(patsubst %_tb.vhd, ../../$(TEST_DIR)/%/_primary.dat, $(VHDL))
+COMPILED = $(patsubst %_tb.vhd, ../../$(TEST_DIR)/%_tb/_primary.dat, $(VHDL))
 
 .PHONY: all
 all: modelsim

@@ -27,6 +27,32 @@ use work.fixed_pkg.all;
 
 package comm_systems_pkg is
 
+  component simple_tx is
+  generic (
+    INCLUDE_DDS  : boolean;
+    MAP_VALUES_I : real_vector;
+    MAP_VALUES_Q : real_vector
+  ); 
+  port (
+           clk               : in std_logic; --! System clock
+           rst               : in std_logic; --! System reset
+           frame_size        : in unsigned; --! Size of frame to transmit
+           clks_per_symbol   : in unsigned; --! Clock cycles per symbol transmitted
+           start             : in std_logic; --! Strobe high to start transmitting.
+           abort             : in std_logic; --! Strobe high to abort transmitting.
+           frame_tx_complete : out std_logic; --! High when not transmitting.
+           buffer_addr       : in std_logic_vector; --! Address to read/write to.
+           buffer_we         : in std_logic; --! High when write, low when read.
+           buffer_write_data : in std_logic_vector; --! Data to write.
+           buffer_read_data  : out std_logic_vector; --! Data read from address.
+           buffer_strobe     : in std_logic; --! Strobe high to cycle bus.
+           buffer_done       : out std_logic; --! Strobe high when read/write complete.
+           freq              : in ufixed; --! Only needed if DDS is used
+           i_out             : out sfixed; --! In-phase data
+           q_out             : out sfixed --! Quadrature-phase data
+       );
+  end component;
+
 end package;
 
 package body comm_systems_pkg is

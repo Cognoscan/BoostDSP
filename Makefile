@@ -62,6 +62,8 @@ init:
 clean:
 	rm -r $(LIB_DIR)
 	rm -r $(TEST_DIR)
+	vlib $(LIB_DIR)
+	vlib $(TEST_DIR)
 
 hardclean: clean
 	rm -rf modelsim.ini

@@ -32,7 +32,7 @@ entity trig_table is
   port (
     clk : in std_logic;
     rst : in std_logic;
-    angle : in unsigned;
+    angle : in ufixed;
     sine : out sfixed;
     cosine : out sfixed
   );
