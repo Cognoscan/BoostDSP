@@ -10,12 +10,12 @@ include ../../Makefile.inc
 
 VHDL = $(shell find -type f -name '*.vhd')
 
-COMPILED = $(patsubst %_tb.vhd, ../../$(TEST_DIR)/%/_primary.dat, $(VHDL))
+COMPILED = $(patsubst %_ea.vhd, ../../$(LIB_DIR)/%/_primary.dat, $(VHDL))
 
 .PHONY: all
 all: modelsim
 
 modelsim: $(COMPILED)
 
-../../$(TEST_DIR)/%/_primary.dat: %.vhd
-	cd ../..;	$(VCOM) -work $(TEST_DIR) ./src/rf_blocks_tb/$<
+../../$(LIB_DIR)/%/_primary.dat: %_ea.vhd
+	cd ../..;	$(VCOM) -work $(LIB_DIR) ./src/comm_systems/$<

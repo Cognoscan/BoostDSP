@@ -17,5 +17,5 @@ all: modelsim
 
 modelsim: $(COMPILED)
 
-../../$(TEST_DIR)/%/_primary.dat: %_tb.vhd
+../../$(TEST_DIR)/%/_primary.dat: %.vhd
 	cd ../..;	$(VCOM) -work $(TEST_DIR) ./src/basic_tb/$<

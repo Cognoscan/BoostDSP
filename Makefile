@@ -9,14 +9,23 @@
 include Makefile.inc
 
 .PHONY: all basic basic_tb init clean
-all: ms_basic_tb ms_rf_blocks_tb
+all: modelsim
 
-modelsim: ms_basic_tb ms_rf_blocks_tb
+modelsim: ms_comm_systems_tb ms_rf_blocks_tb ms_basic_tb
 
 modelsim_test: ms_basic_tb
 
 
 test: ms_basic_tb
+
+ms_comm_systems_tb: ms_comm_systems_pkg
+	cd src/comm_systems_tb; $(MAKE) $(MFLAGS) modelsim
+
+ms_comm_systems_pkg: ./src/comm_systems_pkg.vhd ms_comm_systems
+	$(VCOM) -work $(LIB_DIR) ./src/comm_systems_pkg.vhd
+
+ms_comm_systems: ms_rf_blocks_pkg
+	cd src/comm_systems; $(MAKE) $(MFLAGS) modelsim
 
 ms_rf_blocks_tb: ms_rf_blocks_pkg
 	cd src/rf_blocks_tb; $(MAKE) $(MFLAGS) modelsim

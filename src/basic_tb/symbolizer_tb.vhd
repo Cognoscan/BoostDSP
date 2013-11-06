@@ -38,6 +38,7 @@ architecture rtl of symbolizer_tb is
 signal clk          : std_logic := '1';
 signal rst          : std_logic := '1';
 signal data_in      : unsigned(7 downto 0) := (others => '0');
+signal data_in_std  : std_logic_vector(data_in'range) := (others => '0');
 signal busy         : std_logic;
 signal data_valid   : std_logic := '0';
 signal fetch_symbol : std_logic := '0';
@@ -45,11 +46,13 @@ signal symbol_out   : std_logic_vector(6 downto 0) := (others => '0');
 
 begin
 
+  data_in_std <= std_logic_vector(data_in);
+
   uut : basic_pkg.symbolizer
     port map (
            clk          => clk,
            rst          => rst,
-           data_in      => std_logic_vector(data_in),
+           data_in      => data_in_std,
            busy         => busy,
            data_valid   => data_valid,
            fetch_symbol => fetch_symbol,

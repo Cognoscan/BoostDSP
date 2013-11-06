@@ -41,6 +41,7 @@ constant clk_hp : time := 1 ns;
 signal clk    : std_logic := '0'; --! Clock for UUT
 signal rst    : std_logic := '1'; --! Reset for UUT
 signal data : unsigned(2 downto 0) := (others => '0'); --! Data into mapper
+signal data_std : std_logic_vector(data'range) := (others => '0');
 signal sine   : sfixed(1 downto -6); --! Sine output
 signal cosine : sfixed(1 downto -6); --! Cosine output
 
@@ -54,6 +55,8 @@ constant map_values_q : real_vector(0 to 7) :=
 
 begin
 
+  data_std <= std_logic_vector(data);
+
   uut : basic_pkg.mapper
     generic map (
     map_values_i => map_values_i,
@@ -62,7 +65,7 @@ begin
   port map (
          clk   => clk,
          rst   => rst,
-         data  => std_logic_vector(data(2 downto 0)),
+         data  => data_std,
          i_out => cosine,
          q_out => sine 
        );

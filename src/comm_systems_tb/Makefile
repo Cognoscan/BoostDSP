@@ -18,4 +18,4 @@ all: modelsim
 modelsim: $(COMPILED)
 
 ../../$(TEST_DIR)/%/_primary.dat: %.vhd
-	cd ../..;	$(VCOM) -work $(TEST_DIR) ./src/rf_blocks_tb/$<
+	cd ../..;	$(VCOM) -work $(TEST_DIR) ./src/comm_systems_tb/$<
