@@ -7,6 +7,10 @@
 boostdsp/
 boostdsp_tb/
 
+# Ignore Doxygen output
+doc/html/
+doc/latex/
+
 vsim.wlf
 modelsim.ini
 transcript

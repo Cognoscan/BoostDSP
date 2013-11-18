@@ -15,10 +15,11 @@ COMPILED = $(patsubst %_ea.vhd, ../../$(LIB_DIR)/%/_primary.dat, $(VHDL))
 .PHONY: all
 all: modelsim
 
-modelsim: basic_pkg
-	
-basic_pkg: basic_pkg.vhd $(COMPILED)
-	cd ../..; $(VCOM) -work $(LIB_DIR) ./src/basic/basic_pkg.vhd
+modelsim: vendor_pkg
+
+vendor_pkg: vendor_pkg.vhd $(COMPILED)
+	cd ../..; $(VCOM) -work $(LIB_DIR) ./src/xilinx/vendor_pkg.vhd
 
 ../../$(LIB_DIR)/%/_primary.dat: %_ea.vhd
-	cd ../..;	$(VCOM) -work $(LIB_DIR) ./src/basic/$<
+	cd ../..;	$(VCOM) -work $(LIB_DIR) ./src/xilinx/$<
+

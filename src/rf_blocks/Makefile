@@ -15,7 +15,10 @@ COMPILED = $(patsubst %_ea.vhd, ../../$(LIB_DIR)/%/_primary.dat, $(VHDL))
 .PHONY: all
 all: modelsim
 
-modelsim: $(COMPILED)
+modelsim: rf_blocks_pkg 
+	
+rf_blocks_pkg: rf_blocks_pkg.vhd $(COMPILED)
+	cd ../..; $(VCOM) -work $(LIB_DIR) ./src/rf_blocks/rf_blocks_pkg.vhd
 
 ../../$(LIB_DIR)/%/_primary.dat: %_ea.vhd
 	cd ../..;	$(VCOM) -work $(LIB_DIR) ./src/rf_blocks/$<

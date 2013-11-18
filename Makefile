@@ -15,38 +15,31 @@ modelsim: ms_comm_systems_tb ms_rf_blocks_tb ms_basic_tb
 
 modelsim_test: ms_basic_tb
 
-
 test: ms_basic_tb
 
-ms_comm_systems_tb: ms_comm_systems_pkg
+ms_comm_systems_tb: ms_comm_systems
 	cd src/comm_systems_tb; $(MAKE) $(MFLAGS) modelsim
 
-ms_comm_systems_pkg: ./src/comm_systems_pkg.vhd ms_comm_systems
-	$(VCOM) -work $(LIB_DIR) ./src/comm_systems_pkg.vhd
-
-ms_comm_systems: ms_rf_blocks_pkg
+ms_comm_systems: ms_rf_blocks
 	cd src/comm_systems; $(MAKE) $(MFLAGS) modelsim
 
-ms_rf_blocks_tb: ms_rf_blocks_pkg
+ms_rf_blocks_tb: ms_rf_blocks
 	cd src/rf_blocks_tb; $(MAKE) $(MFLAGS) modelsim
 
-ms_rf_blocks_pkg: ./src/rf_blocks_pkg.vhd ms_rf_blocks
-	$(VCOM) -work $(LIB_DIR) ./src/rf_blocks_pkg.vhd
-
-ms_rf_blocks: ms_basic_pkg
+ms_rf_blocks: ms_basic
 	cd src/rf_blocks; $(MAKE) $(MFLAGS) modelsim
 
-ms_basic_tb: ms_basic_pkg
+ms_basic_tb: ms_basic
 	cd src/basic_tb; $(MAKE) $(MFLAGS) modelsim
-
-ms_basic_pkg : ./src/basic_pkg.vhd ms_basic
-	$(VCOM) -work $(LIB_DIR) ./src/basic_pkg.vhd
 
 ms_basic: ms_fixed ms_util
 	cd src/basic; $(MAKE) $(MFLAGS) modelsim
 
-ms_util: ms_fixed ./src/util_pkg.vhd
+ms_util: ms_vendor ms_fixed ./src/util_pkg.vhd
 	$(VCOM) -work $(LIB_DIR) ./src/util_pkg.vhd
+
+ms_vendor: ms_fixed
+	cd src/$(VENDOR); $(MAKE) $(MFLAGS) modelsim
 
 ms_fixed: ./src/fixed_pkg.vhd
 	$(VCOM) -work $(LIB_DIR) ./src/fixed_pkg.vhd
