@@ -30,6 +30,9 @@ package util_pkg is
   --! Find minimum size of a counter given the maximum count value
   function get_counter_width(x : integer) return integer;
 
+  --! Recast sfixed as signed
+  function sfixed_as_signed(x : sfixed) return signed;
+
 end package;
 
 package body util_pkg is
@@ -66,6 +69,16 @@ package body util_pkg is
   function get_counter_width(x : integer) return integer is
   begin
     return integer(ceil(log2(real(x) + 1.0)));
+  end function;
+
+  --! Recast sfixed as signed
+  function sfixed_as_signed(x : sfixed) return signed is
+    variable y : signed((x'high - x'low) downto 0);
+  begin
+    for i in y'range loop
+      y(i) := std_logic(x(i + x'low));
+    end loop;
+    return y;
   end function;
 
 end package body;

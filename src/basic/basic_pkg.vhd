@@ -114,6 +114,33 @@ package basic_pkg is
          );
   end component;
 
+  --! Dumps fixed-point values to a file. Outputs data to the file one line at 
+  --! a time, and does so on the rising edge of clk, provided that rst is low.
+  component file_sink is
+    generic (
+    FILE_NAME : string --! File name to write to
+  );
+  port (
+         clk : in std_logic; --! Clock line
+         rst : in std_logic; --! Reset line
+         din : in sfixed --! Data to read
+       );
+  end component;
+
+  --! Reads fixed-point values from a file. Outputs data one line at a time, and 
+  --! does so on the rising edge of clk, provided that rst is low. When the end of 
+  --! the file is reached, it loops around to the beginning.
+  component file_source is
+    generic (
+    FILE_NAME : string --! File to read data from
+  );
+  port (
+         clk : in std_logic; --! Clock line
+         rst : in std_logic; --! Reset line
+         dout : out sfixed --! Fixed-point data output
+       );
+  end component;
+
   constant bpsk_i : real_vector(0 to 1) := ( 1.0, -1.0 );
   constant bpsk_q : real_vector(0 to 1) := ( 1.0, -1.0 );
 

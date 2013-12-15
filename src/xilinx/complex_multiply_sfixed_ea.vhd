@@ -100,24 +100,131 @@ end entity;
 architecture rtl of complex_multiply_sfixed is
 
 
+  --! Signals for (a_r - a_i) * b_r
+  --! {
   signal a_r_delay1 : sfixed(a_r'range);
   signal a_i_delay1 : sfixed(a_i'range);
   signal b_r_delay1 : sfixed(b_r'range);
   signal b_r_delay2 : sfixed(b_r'range);
-  signal a_r_minus_i : sfixed(sfixed_high(a_r,'-',a_i) downto 
-    sfixed_low(a_r,'-',a_i));
-  signal mult1 : sfixed(sfixed_high(a_r_minus_i,'*',b_r) downto
-    sfixed_low(a_r_minus_i,'*',b_r));
+  signal a_r_minus_i : sfixed(
+    sfixed_high(a_r'high, a_r'low,'-',a_i'high,a_i'low) downto 
+    sfixed_low (a_r'high, a_r'low,'-',a_i'high, a_i'low));
+  signal mult1 : sfixed(
+    sfixed_high(a_r_minus_i'high,a_r_minus_i'low,'*',b_r'high,b_r'low) downto
+    sfixed_low (a_r_minus_i'high,a_r_minus_i'low,'*',b_r'high,b_r'low));
+  --! }
 
+  --! Signals for (b_r - b_i) * a_i'
+  --! {
+  signal a_i_delay_mid : sfixed(a_i'range);
+  signal b_r_minus_i : sfixed(
+    sfixed_high(b_r'high,b_r'low,'-',b_i'high,b_i'low) downto
+    sfixed_low (b_r'high,b_r'low,'-',b_i'high,b_i'low));
+  signal mult2 : sfixed(
+    sfixed_high(b_r_minus_i'high,b_r_minus_i'low,'*',a_i'high,a_i'low) downto
+    sfixed_low (b_r_minus_i'high,b_r_minus_i'low,'*',a_i'high,a_i'low));
+  signal mult2_delay : sfixed(mult2'range);
+  --! }
+
+  --! Signals for (a_r + a_i) * b_i
+  --! {
   signal a_r_delay2 : sfixed(a_r'range);
   signal a_i_delay2 : sfixed(a_i'range);
   signal b_i_delay1 : sfixed(b_i'range);
   signal b_i_delay2 : sfixed(b_i'range);
-  signal a_r_plus_i : sfixed(sfixed_high(a_r,'+',a_i) downto 
-    sfixed_low(a_r,'+',a_i));
-  signal mult3 : sfixed(sfixed_high(a_r_plus_i,'*',b_i) downto
-    sfixed_low(a_r_plus_i,'*',b_i));
+  signal a_r_plus_i : sfixed(
+    sfixed_high(a_r'high,a_r'low,'+',a_i'high,a_i'low) downto 
+    sfixed_low (a_r'high,a_r'low,'+',a_i'high,a_i'low));
+  signal mult3 : sfixed(
+    sfixed_high(a_r_plus_i'high,a_r_plus_i'low,'*',b_i'high,b_i'low) downto
+    sfixed_low (a_r_plus_i'high,a_r_plus_i'low,'*',b_i'high,b_i'low));
+  --! }
+
+  --! Adder Outputs
+  --! {
+  signal out_r : sfixed(c_r'range);
+  signal out_i : sfixed(c_i'range);
+  --! }
 
 begin
+
+  --! (a_r - a_i) * b_r
+  first_term : process(clk, rst)
+  begin
+    if rising_edge(clk) then
+      if rst = '1' then
+        a_r_delay1 <= to_sfixed(0, a_r_delay1);
+        a_i_delay1 <= to_sfixed(0, a_i_delay1);
+        b_r_delay1 <= to_sfixed(0, b_r_delay1);
+        b_r_delay2 <= to_sfixed(0, b_r_delay2);
+        a_r_minus_i <= to_sfixed(0, a_r_minus_i);
+        mult1 <= to_sfixed(0, mult1);
+      else
+        a_r_delay1 <= a_r;
+        a_i_delay1 <= a_i;
+        b_r_delay1 <= b_r;
+        b_r_delay2 <= b_r_delay1;
+        a_r_minus_i <= a_r_delay1 - a_i_delay1;
+        mult1 <= a_r_minus_i * b_r_delay2;
+      end if;
+    end if;
+  end process;
+
+  --! (b_r - b_i) * a_i
+  second_term : process(clk, rst)
+  begin
+    if rising_edge(clk) then
+      if rst = '1' then
+        a_i_delay_mid <= to_sfixed(0, a_i_delay_mid);
+        b_r_minus_i <= to_sfixed(0, b_r_minus_i);
+        mult2 <= to_sfixed(0, mult2);
+        mult2_delay <= to_sfixed(0, mult2_delay);
+      else
+        a_i_delay_mid <= a_i;
+        b_r_minus_i <= b_r - b_i;
+        mult2 <= b_r_minus_i * a_i_delay_mid;
+        mult2_delay <= mult2;
+      end if;
+    end if;
+  end process;
+
+  --! (a_r - a_i) * b_r
+  third_term : process(clk, rst)
+  begin
+    if rising_edge(clk) then
+      if rst = '1' then
+        a_r_delay2 <= to_sfixed(0, a_r_delay2);
+        a_i_delay2 <= to_sfixed(0, a_i_delay2);
+        b_i_delay1 <= to_sfixed(0, b_i_delay1);
+        b_i_delay2 <= to_sfixed(0, b_i_delay2);
+        a_r_plus_i <= to_sfixed(0, a_r_plus_i);
+        mult3 <= to_sfixed(0, mult3);
+      else
+        a_r_delay2 <= a_r;
+        a_i_delay2 <= a_i;
+        b_i_delay1 <= b_i;
+        b_i_delay2 <= b_i_delay1;
+        a_r_plus_i <= a_r_delay2 - a_i_delay2;
+        mult3 <= a_r_plus_i * b_i_delay2;
+      end if;
+    end if;
+  end process;
+
+  --! Sum terms together for output
+  find_outputs : process(clk, rst)
+  begin
+    if rising_edge(clk) then
+      if rst = '1' then
+        out_r <= to_sfixed(0, out_r);
+        out_i <= to_sfixed(0, out_i);
+      else 
+        out_r <= mult1 + mult2_delay;
+        out_i <= mult3 + mult2_delay;
+      end if;
+    end if;
+  end process;
+
+  c_r <= resize(out_r, c_r'high, c_r'low);
+  c_i <= resize(out_i, c_i'high, c_i'low);
 
 end rtl;

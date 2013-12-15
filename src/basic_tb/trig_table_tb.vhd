@@ -28,6 +28,7 @@ use boostdsp.fixed_pkg.all;
 use boostdsp.basic_pkg;
 
 --! Tests the boostdsp.trig_table entity.
+--! @TODO Use sfixed_as_signed to get vis_sine & vis_cosine.
 entity trig_table_tb is
 end entity;
 
