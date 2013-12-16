@@ -141,6 +141,27 @@ package basic_pkg is
        );
   end component;
 
+  --! Pipelined FIR filter. Can be configured to be a symmetric filter, and takes 
+  --! in coefficients as it runs. The upper and lower bits of the fixed-point 
+  --! accumulators must be set by the user. The recommended values of these are 
+  --! vendor- and application-dependent, and thus cannot be calculated within this 
+  --! entity.
+  component fir is
+    generic (
+    SYMMETRIC : boolean; --! Symmetric filter
+    EVEN      : boolean; --! Even or odd number of total coefficients
+    UPPER_BIT : integer; --! Upper bit of accumulator
+    LOWER_BIT : integer  --! Lower bit of accumulator
+  );
+  port (
+         clk : in std_logic; --! Clock line
+         rst : in std_logic; --! Reset line
+         coeff : in sfixed_vector; --! Coefficient vector
+         din : in sfixed; --! Data into FIR filter
+         dout : out sfixed --! Filtered data
+       );
+  end component;
+
   constant bpsk_i : real_vector(0 to 1) := ( 1.0, -1.0 );
   constant bpsk_q : real_vector(0 to 1) := ( 1.0, -1.0 );
 
