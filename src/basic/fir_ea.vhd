@@ -30,7 +30,18 @@ use work.util_pkg.all;
 --! vendor- and application-dependent, and thus cannot be calculated within this 
 --! entity.
 --!
---! @bug Symmetric option and even option don't work.
+--! If using the symmetric option, make sure to correctly set whether there is 
+--! an even or odd **total** number of coefficients. The entity will not function as 
+--! expected otherwise.
+--!
+--! Example: 64-tap filter can be described with 32 coefficients if it is 
+--! symmetric. Set EVEN to true so that the entity knows it was originally 
+--! a 64-tap filter.
+--!
+--! Example: 63-tap filter can also be described with 32 coefficients if it is 
+--! symmetric. Set EVEN to false so that the entity knows it was originally 
+--! a 63-tap filter, and not a 64-tap.
+--!
 entity fir is
   generic (
     SYMMETRIC : boolean := false; --! Symmetric filter
@@ -58,7 +69,7 @@ architecture rtl of fir is
 
   signal add_reg : sfixed_vector(coeff'range)(UPPER_BIT downto LOWER_BIT);
 
-  signal symmetric_delay : sfixed_vector(coeff'range)(din'range);
+  signal symmetric_delay : sfixed_vector(0 to (coeff'high * 2 + 1))(din'range);
 
   signal symmetric_input : sfixed_vector(coeff'range)(din'range);
 
@@ -83,14 +94,8 @@ begin
                    mul_reg'element'high, mul_reg'element'low));
         add_reg <= (others => to_sfixed(0,
                    add_reg'element'high, add_reg'element'low));
-        if SYMMETRIC then
-          symmetric_delay <= (others => to_sfixed(0,
-                     symmetric_delay'element'high, symmetric_delay'element'low));
-          symmetric_input <= (others => to_sfixed(0,
-                     symmetric_input'element'high, symmetric_input'element'low));
-        end if;
       else
-        for i in coeff'range(1) loop
+        for i in coeff'range loop
           -- Input data pipeline
           if i = 0 then
             in_line(i) <= din; -- Feed data in to delay line
@@ -102,16 +107,15 @@ begin
 
           -- Multiplier & preadder are different depending on whether the filter 
           -- is symmetric or not
-          if SYMMETRIC = true then
-            -- Delay line for symmetric data
-            if i = 0 then
-              symmetric_delay(i) <= din;
+          if SYMMETRIC then
+            if ((not EVEN) and (i = coeff'high)) then
+              preadd_reg(i) <= resize(delay0(i),
+                               preadd_reg'element'high,
+                               preadd_reg'element'low);
             else
-              symmetric_delay(i) <= symmetric_delay(i-1);
+              preadd_reg(i) <= delay0(i) + symmetric_input(i);
             end if;
-            -- Preadder for symmetric filter
-            symmetric_input(i) <= symmetric_delay(i);
-            preadd_reg(i) <= delay0(i) + symmetric_input(coeff'high(1));
+            
 
             -- Multiply data by coefficients
             mul_reg(i) <= resize(preadd_reg(i) * coeff_reg(i),
@@ -136,6 +140,37 @@ begin
       end if;
     end if;
   end process;
+
+  symmetric_delay_pipeline_gen : if SYMMETRIC generate
+    symmetric_delay_pipeline : process(clk, rst)
+    begin
+      if rising_edge(clk) then
+        if rst = '1' then
+          symmetric_delay <= (others => to_sfixed(0,
+                             symmetric_delay'element'high,
+                             symmetric_delay'element'low));
+          symmetric_input <= (others => to_sfixed(0,
+                             symmetric_input'element'high,
+                             symmetric_input'element'low));
+        else
+          for i in symmetric_delay'range loop
+            if i = 0 then
+              symmetric_delay(i) <= din;
+            else
+              symmetric_delay(i) <= symmetric_delay(i - 1);
+            end if;
+          end loop;
+          for i in symmetric_input'range loop
+            if EVEN then
+              symmetric_input(i) <= symmetric_delay(symmetric_delay'high);
+            else
+              symmetric_input(i) <= symmetric_delay(symmetric_delay'high-1);
+            end if;
+          end loop;
+        end if; -- rst
+      end if; -- clk
+    end process; -- pipeline
+  end generate; -- generate
 
   --! Final output is output from highest adder
   dout <= add_reg(add_reg'high(1))(dout'high downto dout'low);
