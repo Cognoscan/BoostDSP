@@ -84,6 +84,7 @@ begin
                clk   => clk,
                rst   => rst,
                freq  => freq,
+               phase => to_ufixed(0,-1,-2),
                i_out => dds_i,
                q_out => dds_q
              );

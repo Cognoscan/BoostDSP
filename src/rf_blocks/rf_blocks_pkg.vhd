@@ -38,6 +38,7 @@ package rf_blocks_pkg is
            clk   : in std_logic; --! Clock line
            rst   : in std_logic; --! Reset line
            freq  : in ufixed;    --! Frequency input
+           phase : in ufixed;    --! Additional phase offset
            i_out : out sfixed;   --! I Sinusoidal output
            q_out : out sfixed    --! Q Sinusoidal output
          );
@@ -51,6 +52,7 @@ package rf_blocks_pkg is
     clk   : in std_logic;      --! Clock line
     rst   : in std_logic;      --! Reset line
     freq  : in ufixed;         --! Frequency input
+    phase : in ufixed;         --! Additional phase offset
     i_out : out sfixed_vector; --! I Sinusoidal output vector
     q_out : out sfixed_vector  --! Q Sinusoidal output vector
   );

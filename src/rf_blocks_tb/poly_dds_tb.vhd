@@ -34,7 +34,7 @@ end entity;
 
 architecture sim of poly_dds_tb is
 
-  constant NUM_CHANNELS : positive := 10;
+  constant NUM_CHANNELS : positive := 16;
   constant CH_MAX : positive := NUM_CHANNELS - 1;
 
   constant clk_p : time := 10 ns;
@@ -43,6 +43,7 @@ architecture sim of poly_dds_tb is
   signal clk   : std_logic := '0';
   signal rst   : std_logic := '1';
   signal freq  : ufixed(-1 downto -9) := to_ufixed(0.1, -1, -9);
+  signal phase : ufixed(-1 downto -9) := to_ufixed(0, -1, -9);
   signal i_out : sfixed_vector(0 to CH_MAX)(1 downto -6);
   signal q_out : sfixed_vector(0 to CH_MAX)(1 downto -6);
 
@@ -54,21 +55,25 @@ architecture sim of poly_dds_tb is
 
 begin
 
+  --! Polyphase DDS Unit Under Test
   uut: rf_blocks_pkg.poly_dds
   port map(
     clk   => clk,
     rst   => rst,
     freq  => freq,
+    phase => phase,
     i_out => i_out,
     q_out => q_out
   );
 
+  --! Clock generator
   clk_proc : process
   begin
     wait for clk_hp;
     clk <= not clk;
   end process;
 
+  --! Reset generator
   rst_proc : process
   begin
     wait for clk_p * 4;
@@ -76,11 +81,25 @@ begin
     wait;
   end process;
 
+  --! Test the phase shifting input
+  phase_test_proc : process
+  begin
+    wait for clk_p * 20;
+    phase <= to_ufixed(0.2, phase);
+    wait for clk_p * 20;
+    phase <= to_ufixed(0.5, phase);
+    wait for clk_p * 20;
+    phase <= to_ufixed(0, phase);
+    wait;
+  end process;
+
+  --! Visualize all generated sinusoids
   visualize : for i in i_out'range generate
     vis_i_out(i) <= sfixed_as_signed(i_out(i));
     vis_q_out(i) <= sfixed_as_signed(q_out(i));
   end generate;
 
+  --! Upconvert and serialize all sinusoids to get high-speed sinusoids
   visualize_combined : process
   begin
     wait until rising_edge(clk);

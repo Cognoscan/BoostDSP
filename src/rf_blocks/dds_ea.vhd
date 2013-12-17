@@ -35,32 +35,48 @@ use work.basic_pkg;
 --! 0.5, where i_out[n] = cos(2*pi*freq*n) and q_out[n] = sin(2*pi*freq*n).
 entity dds is
   port (
-    clk : in std_logic; --! Clock line
-    rst : in std_logic; --! Reset line
-    freq : in ufixed; --! Frequency input
-    i_out : out sfixed; --! I Sinusoidal output
-    q_out : out sfixed --! Q Sinusoidal output
+    clk   : in std_logic; --! Clock line
+    rst   : in std_logic; --! Reset line
+    freq  : in ufixed;    --! Frequency input
+    phase : in ufixed;    --! Additional phase offset
+    i_out : out sfixed;   --! I Sinusoidal output
+    q_out : out sfixed    --! Q Sinusoidal output
   );
 end entity dds;
 
+--! Phase accumulator-base DDS architecture. Uses a phase accumulator that adds 
+--! freq to phase_acc every clock cycle. The phase offset is then added on to 
+--! get the angle. This signal angle then feeds the trigometric look-up 
+--! table. The outputs of this look-up table is the DDS output.
 architecture rtl of dds is
+
+  --! Angle of DDS before adding phase offset (phase accumulator)
+  signal phase_acc : ufixed(-1 downto freq'low);
 
   --! Current angle of DDS (phase register)
   signal angle : ufixed(-1 downto freq'low); 
 
 begin
 
+  --! State assumptions
   assert freq'high < 0
     report "Frequency bits above -1 not used (freq = 0 to 1)"
     severity warning;
+  assert phase'high < 0
+    report "Phase bits above -1 not used (phase accumulator = 0 to 1)"
+    severity warning;
 
+  --! Phase accumulator and angle calculation
   phase_inc : process (clk, rst)
   begin
     if rising_edge(clk) then
       if rst = '1' then
+        phase_acc <= to_ufixed(0, phase_acc);
         angle <= to_ufixed(0, angle);
       else
-        angle <= resize(angle + freq, angle'high, angle'low,
+        phase_acc <= resize(phase_acc + freq, phase_acc'high, phase_acc'low,
+                     fixed_wrap, fixed_truncate);
+        angle <= resize(phase_acc + phase, angle'high, angle'low,
                  fixed_wrap, fixed_truncate);
       end if;
     end if;

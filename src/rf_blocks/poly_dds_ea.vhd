@@ -36,24 +36,33 @@ use work.basic_pkg;
 --! determined by freq, which should be some value between 0 and 1. 
 entity poly_dds is
   port (
-    clk : in std_logic; --! Clock line
-    rst : in std_logic; --! Reset line
-    freq : in ufixed; --! Frequency input
+    clk   : in std_logic;      --! Clock line
+    rst   : in std_logic;      --! Reset line
+    freq  : in ufixed;         --! Frequency input
+    phase : in ufixed;         --! Additional phase offset
     i_out : out sfixed_vector; --! I Sinusoidal output vector
     q_out : out sfixed_vector  --! Q Sinusoidal output vector
   );
 end entity poly_dds;
 
+--! Phase accumulator-base DDS architecture. Uses a phase accumulator that adds 
+--! freq to phase_acc every clock cycle. The phase offset is then added on to 
+--! get the angle. This signal angle is then used along with multiples of freq 
+--! to get the various phase-offset angles to feed to the trigometric look-up 
+--! tables. The outputs of these look-up tables are the polyphase DDS outputs.
 architecture rtl of poly_dds is
 
   --! Registered freq value
   signal freq_reg : ufixed(freq'range);
 
-  --! Scaled freq value to increment angle by
-  signal angle_freq : ufixed(freq'range);
+  --! Scaled freq value to increment the phase accumulator by
+  signal phase_acc_freq : ufixed(freq'range);
 
   --! Scaled freq values for use in finding phases
   signal scaled_freqs : ufixed_vector(i_out'range)(freq'range);
+
+  --! Angle of DDS before adding phase offset (phase accumulator)
+  signal phase_acc : ufixed(-1 downto freq'low);
 
   --! Current angle of DDS (primary phase register)
   signal angle : ufixed(-1 downto freq'low);
@@ -83,14 +92,14 @@ begin
     if rising_edge(clk) then
       if rst = '1' then
         freq_reg <= to_ufixed(0, freq_reg);
-        angle_freq <= to_ufixed(0, angle_freq'high, angle_freq'low);
+        phase_acc_freq <= to_ufixed(0, phase_acc_freq'high, phase_acc_freq'low);
         scaled_freqs <= (others => to_ufixed(0,
                         scaled_freqs'element'high, scaled_freqs'element'low));
       else
         freq_reg <= freq;
-        angle_freq <= resize(freq_reg *
+        phase_acc_freq <= resize(freq_reg *
                       to_ufixed(i_out'length, get_counter_width(i_out'high), 0),
-                      angle_freq'high, angle_freq'low,
+                      phase_acc_freq'high, phase_acc_freq'low,
                       fixed_wrap, fixed_truncate);
         for i in i_out'range loop
           scaled_freqs(i) <= resize(freq_reg *
@@ -107,11 +116,15 @@ begin
   begin
     if rising_edge(clk) then
       if rst = '1' then
+        phase_acc <= to_ufixed(0, phase_acc);
         angle <= to_ufixed(0, angle);
         phases <= (others => to_ufixed(0,
                   phases'element'high, phases'element'low));
       else
-        angle <= resize(angle + angle_freq, angle'high, angle'low,
+        phase_acc <= resize(phase_acc + phase_acc_freq,
+                     phase_acc'high, phase_acc'low,
+                     fixed_wrap, fixed_truncate);
+        angle <= resize(phase_acc + phase, angle'high, angle'low,
                  fixed_wrap, fixed_truncate);
         for i in i_out'range loop
           phases(i) <= resize(angle + scaled_freqs(i),

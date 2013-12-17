@@ -25,6 +25,7 @@ use ieee.numeric_std.all;
 
 library boostdsp;
 use boostdsp.fixed_pkg.all;
+use boostdsp.util_pkg.all;
 use boostdsp.rf_blocks_pkg;
 
 --! Tests the boostdsp.dds entity.
@@ -38,6 +39,7 @@ constant clk_hp : time := 1 ns;
 signal clk   : std_logic := '0';
 signal rst   : std_logic := '1';
 signal freq  : ufixed(-1 downto -9) := to_ufixed(0.1, -1, -9);
+signal phase : ufixed(-1 downto -9) := to_ufixed(0, -1, -9);
 signal i_out : sfixed(1 downto -6);
 signal q_out : sfixed(1 downto -6);
 
@@ -46,21 +48,25 @@ signal vis_q_out : signed((q_out'length - 1) downto 0);
 
 begin
 
+  -- DDS Unit Under Test
   uut : rf_blocks_pkg.dds
     port map (
            clk   => clk,
            rst   => rst,
            freq  => freq,
+           phase => phase,
            i_out => i_out,
            q_out => q_out
          );
 
+  -- Clock generator
   clk_proc : process
   begin
     wait for clk_hp;
     clk <= not clk;
   end process;
 
+  --! Reset generator
   rst_proc : process
   begin
     wait for clk_hp * 4;
@@ -68,13 +74,17 @@ begin
     wait;
   end process;
 
-  vis_q_out_gen : for i in vis_q_out'range generate
-    vis_q_out(i) <= std_logic(q_out(i - (q_out'high - q_out'low) + 1));
-  end generate;
+  --! Phase shift test
+  phase_test_proc : process
+  begin
+    wait for clk_hp * 400;
+    phase <= to_ufixed(0.2, -1, -9);
+    wait for clk_hp * 400;
+    phase <= to_ufixed(0.5, -1, -9);
+    wait;
+  end process;
 
-  vis_i_out_gen : for i in vis_i_out'range generate
-    vis_i_out(i) <= std_logic(i_out(i - (i_out'high - i_out'low) + 1));
-  end generate;
-
+  vis_i_out <= sfixed_as_signed(i_out);
+  vis_q_out <= sfixed_as_signed(q_out);
 
 end sim;
