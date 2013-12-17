@@ -24,18 +24,37 @@ use ieee.math_real.all;
 use ieee.numeric_std.all;
 
 use work.fixed_pkg.all;
+use work.util_pkg.all;
 
 package rf_blocks_pkg is
 
+  --! Direct Digital Synthesizer. Generates 2 sinusoidal waves 90 degrees out of 
+  --! phase with each other. Frequency is determined by freq, which should be 
+  --! some value between 0 and 1. Realistically, this value will only be between 
+  --! 0 and 0.5, where i_out[n] = cos(2*pi*freq*n) and q_out[n] 
+  --! = sin(2*pi*freq*n).
   component dds is
     port (
-           clk : in std_logic;
-           rst : in std_logic;
-           freq : in ufixed;
-           i_out : out sfixed;
-           q_out : out sfixed
+           clk   : in std_logic; --! Clock line
+           rst   : in std_logic; --! Reset line
+           freq  : in ufixed;    --! Frequency input
+           i_out : out sfixed;   --! I Sinusoidal output
+           q_out : out sfixed    --! Q Sinusoidal output
          );
   end component dds;
+
+  --! Polyphase Direct Digital Synthesizer. For each phase channel, generates 
+  --! 2 sinusoidal waves 90 degrees out of phase with each other. Frequency is 
+  --! determined by freq, which should be some value between 0 and 1. 
+  component poly_dds is
+  port (
+    clk   : in std_logic;      --! Clock line
+    rst   : in std_logic;      --! Reset line
+    freq  : in ufixed;         --! Frequency input
+    i_out : out sfixed_vector; --! I Sinusoidal output vector
+    q_out : out sfixed_vector  --! Q Sinusoidal output vector
+  );
+  end component;
 
   component frame_tx is
     port (

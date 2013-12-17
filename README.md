@@ -89,6 +89,10 @@ other portions of the BoostDSP library. It contains:
 - file_source: outputs data from a file on each rising edge of clk. Can act like 
 an arbitrary waveform generator.
 
+- fir: Pipelined (systolic) FIR filter. Can be configured to be more efficient 
+for symmetric filters (even or odd). Coefficients are configured via a port, so 
+it can be adjusted while running.
+
 - lfsr_direct: Uses an LFSR to generate random-looking data. Uses direct 
 feedback, rather than a Galois LFSR implementation.
 
@@ -119,6 +123,10 @@ component.
 - frame_tx: Controller for frame transmission. It provides a buffer to read and 
 write to, and will take care of turning the entire buffer into a stream of 
 symbols when told to.
+
+- poly_dds: Polyphase Direct Digital Synthesizer. Works like the dds component, 
+but generates multiple phase-shifted versions of the signal. Makes it possible 
+to generate sinusoidal waves at frequencies higher than the system clock.
 
 ## Communication Systems Package ##
 

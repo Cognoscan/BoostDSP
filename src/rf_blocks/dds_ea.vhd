@@ -22,30 +22,31 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.math_real.all;
 use ieee.numeric_std.all;
+use ieee.fixed_float_types.all;
 
 --! Local version of the fixed point package
 use work.fixed_pkg.all;
 --! Basic design elements
 use work.basic_pkg;
 
+--! Direct Digital Synthesizer. Generates 2 sinusoidal waves 90 degrees out of 
+--! phase with each other. Frequency is determined by freq, which should be some 
+--! value between 0 and 1. Realistically, this value will only be between 0 and 
+--! 0.5, where i_out[n] = cos(2*pi*freq*n) and q_out[n] = sin(2*pi*freq*n).
 entity dds is
   port (
-    clk : in std_logic;
-    rst : in std_logic;
-    freq : in ufixed;
-    i_out : out sfixed;
-    q_out : out sfixed
+    clk : in std_logic; --! Clock line
+    rst : in std_logic; --! Reset line
+    freq : in ufixed; --! Frequency input
+    i_out : out sfixed; --! I Sinusoidal output
+    q_out : out sfixed --! Q Sinusoidal output
   );
 end entity dds;
 
 architecture rtl of dds is
 
-  constant freq_width : positive := 0 - freq'low;
-
-  signal freq_bits : unsigned((freq_width - 1) downto 0);
-  signal angle : ufixed(-1 downto freq'low);
-
-  signal phase_counter : unsigned((freq_width - 1) downto 0);
+  --! Current angle of DDS (phase register)
+  signal angle : ufixed(-1 downto freq'low); 
 
 begin
 
@@ -53,20 +54,14 @@ begin
     report "Frequency bits above -1 not used (freq = 0 to 1)"
     severity warning;
 
-  -- Generate an unsigned value to use for system.
-  -- Also generate a fixed point angle value to feed to trig_table.
-  ufixed_unsigned_conv : for i in freq_bits'range generate
-    freq_bits(i) <= freq(i - freq_width);
-    angle(i - freq_width) <= phase_counter(i);
-  end generate;
-
   phase_inc : process (clk, rst)
   begin
     if rising_edge(clk) then
       if rst = '1' then
-        phase_counter <= to_unsigned(0, phase_counter'length);
+        angle <= to_ufixed(0, angle);
       else
-        phase_counter <= phase_counter + freq_bits;
+        angle <= resize(angle + freq, angle'high, angle'low,
+                 fixed_wrap, fixed_truncate);
       end if;
     end if;
   end process;
