@@ -68,11 +68,26 @@ package basic_pkg is
 --! Outputs cos(2*pi*angle) and sin(2*pi*angle), where 0 <= angle < 1.
   component trig_table is
     port (
-           clk    : in std_logic;
-           rst    : in std_logic;
-           angle  : in ufixed;
-           sine   : out sfixed;
-           cosine : out sfixed
+    clk : in std_logic; --! Clock line
+    rst : in std_logic; --! Reset Line
+    angle : in ufixed; --! Normalized angle (0 <= angle < 1)
+    sine : out sfixed; --! sin(2*pi*angle)
+    cosine : out sfixed --! cos(2*pi*angle)
+         );
+  end component;
+
+  --! Data strobed Sin & Cos lookup table. Finds new values every time strobe_in 
+  --! goes high and outputs them with strobe_out.
+  --! Outputs cos(2*pi*angle) and sin(2*pi*angle), where 0 <= angle < 1.
+  component strobed_trig_table is
+    port (
+           clk : in std_logic; --! Clock line
+           rst : in std_logic; --! Reset Line
+           angle : in ufixed; --! Normalized angle (0 <= angle < 1)
+           strobe_in : in std_logic; --! Data strobe input
+           sine : out sfixed; --! sin(2*pi*angle)
+           cosine : out sfixed; --! cos(2*pi*angle)
+           strobe_out : out std_logic --! Data strobe output
          );
   end component;
 
@@ -124,6 +139,20 @@ package basic_pkg is
          clk : in std_logic; --! Clock line
          rst : in std_logic; --! Reset line
          din : in sfixed --! Data to read
+       );
+  end component;
+
+  --! Dumps fixed-point values to a file. Outputs data to the file one line at 
+  --! a time, and does so each time strobe goes high, provided that rst is low.
+  component strobed_file_sink is
+    generic (
+    FILE_NAME : string --! File name to write to
+  );
+  port (
+         clk       : in std_logic; --! Clock line
+         rst       : in std_logic; --! Reset line
+         din       : in sfixed;    --! Data to read
+         strobe_in : in std_logic  --! Data strobe
        );
   end component;
 

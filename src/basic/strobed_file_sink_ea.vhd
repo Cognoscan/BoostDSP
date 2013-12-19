@@ -1,7 +1,7 @@
---! @file file_sink_ea.vhd
+--! @file stroped_file_sink_ea.vhd
 --! @brief Writes fixed-point data to a file.
 --! @author Scott Teal (Scott@Teals.org)
---! @date 2013-12-13
+--! @date 2013-12-19
 --! @copyright
 --! Copyright 2013 Richard Scott Teal, Jr.
 --! 
@@ -28,21 +28,22 @@ use work.fixed_pkg.all;
 use work.util_pkg.all;
 
 --! Dumps fixed-point values to a file. Outputs data to the file one line at 
---! a time, and does so on the rising edge of clk, provided that rst is low.
-entity file_sink is
+--! a time, and does so each time strobe goes high, provided that rst is low.
+entity strobed_file_sink is
   generic (
     FILE_NAME : string --! File name to write to
   );
   port (
-    clk : in std_logic; --! Clock line
-    rst : in std_logic; --! Reset line
-    din : in sfixed     --! Data to read
+    clk       : in std_logic; --! Clock line
+    rst       : in std_logic; --! Reset line
+    din       : in sfixed;    --! Data to read
+    strobe_in : in std_logic  --! Data strobe
   );
 end entity;
 
 --! Uses Textio to write data line by line to a file. It stores data as 
 --! human-readable real values, separated by newline characters.
-architecture sim of file_sink is
+architecture sim of strobed_file_sink is
   
   file out_file : text open write_mode is FILE_NAME; --! File sink
 
@@ -52,9 +53,11 @@ begin
   write_output : process (clk, rst)
     variable  buf : line; --! Text buffer between data and file output
   begin
-    if rising_edge(clk) and (rst = '0') then
-      write(buf, to_real(din));
-      writeline(out_file, buf);
+    if rising_edge(clk) then
+      if rising_edge(strobe_in) and (rst = '0') then
+        write(buf, to_real(din));
+        writeline(out_file, buf);
+      end if;
     end if;
   end process;
 

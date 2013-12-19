@@ -1,7 +1,7 @@
---! @file trig_table_ea.vhd
---! @brief sin/cos lookup table generator
+--! @file strobed_trig_table_ea.vhd
+--! @brief data strobed sin/cos lookup table generator
 --! @author Scott Teal (Scott@Teals.org)
---! @date 2013-09-30
+--! @date 2013-12-19
 --! @copyright
 --! Copyright 2013 Richard Scott Teal, Jr.
 --! 
@@ -26,25 +26,28 @@ use ieee.numeric_std.all;
 use work.fixed_pkg.all;
 use work.util_pkg.all;
 
---! Sin & Cos lookup table.
+--! Data strobed Sin & Cos lookup table. Finds new values every time strobe_in 
+--! goes high and outputs them with strobe_out.
 --! Outputs cos(2*pi*angle) and sin(2*pi*angle), where 0 <= angle < 1.
 --!
 --! @todo add generic option to use quarter-wave lookup tables and make it the 
 --! default.
 --!
-entity trig_table is
+entity strobed_trig_table is
   port (
     clk : in std_logic; --! Clock line
     rst : in std_logic; --! Reset Line
     angle : in ufixed; --! Normalized angle (0 <= angle < 1)
+    strobe_in : in std_logic; --! Data strobe input
     sine : out sfixed; --! sin(2*pi*angle)
-    cosine : out sfixed --! cos(2*pi*angle)
+    cosine : out sfixed; --! cos(2*pi*angle)
+    strobe_out : out std_logic --! Data strobe output
   );
 end entity;
 
 --! Uses two lookup tables to find sin & cos. Future version will use 
 --! quarter-wave lookup tables as default.
-architecture rtl of trig_table is
+architecture rtl of strobed_trig_table is
 
   --! Function for generating sine lookup table
   function sine_table (angle_width : natural; sine_high, sine_low : integer) return sfixed_vector is
@@ -120,9 +123,11 @@ begin
       if rst = '1' then
         sine <= to_sfixed(0.0, sine);
         cosine <= to_sfixed(0.0, cosine);
+        strobe_out <= '0';
       else
         sine <= sine_lookup_table(to_integer(unsigned(lookup_bits)));
         cosine <= cosine_lookup_table(to_integer(unsigned(lookup_bits)));
+        strobe_out <= strobe_in;
       end if;
     end if;
   end process;
