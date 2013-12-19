@@ -34,35 +34,43 @@ use work.util_pkg.all;
 --! converted to fixed point values of the same size as i_out and q_out.
 entity mapper is
   generic (
-    map_values_i : real_vector;
-    map_values_q : real_vector
+    map_values_i : real_vector; --! I value vector to map data to
+    map_values_q : real_vector  --! Q value vector to map data to
   );
   port (
-    clk : in std_logic;
-    rst : in std_logic;
-    data : in std_logic_vector;
-    i_out : out sfixed;
-    q_out : out sfixed
+    clk : in std_logic; --! System clock
+    rst : in std_logic; --! System reset
+    data : in std_logic_vector; --! Data vector to map to I & Q values
+    i_out : out sfixed; --! I value output
+    q_out : out sfixed  --! Q value output
   );
 end entity;
 
 
 architecture rtl of mapper is
 
+  --! Generated Symbol Table for I values
   constant symbol_table_i : sfixed_vector :=
     to_sfixed_vector(map_values_i, i_out'high, i_out'low);
+  --! Generated Symbol Table for Q values
   constant symbol_table_q : sfixed_vector := 
     to_sfixed_vector(map_values_q, q_out'high, q_out'low);
 
 begin
 
+  --! Uses the Symbol Tables as look-up tables to get the I & Q values 
+  --! corresponding to a given data vector. The data vector is used as the index 
+  --! to the look-up table, and is assumed to be an unsigned integer for this 
+  --! purpose.
   mapping : process (clk, rst)
   begin
     if rising_edge(clk) then
       if rst = '1' then
+        -- Output 0 on reset
         i_out <= to_sfixed(0.0, i_out);
         q_out <= to_sfixed(0.0, q_out);
       else
+        -- Mapping of data
         i_out <= symbol_table_i(to_integer(unsigned(data)));
         q_out <= symbol_table_q(to_integer(unsigned(data)));
       end if;
