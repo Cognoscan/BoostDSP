@@ -14,8 +14,10 @@ boostdsp_tb/
 doc/html/
 doc/latex/
 
+# Ignore Modelsim files
 vsim.wlf
 modelsim.ini
 transcript
 vsim_stacktrace.vstf
+wave.do
 
