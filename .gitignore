@@ -1,5 +1,8 @@
 #Ignores for VHDL
 
+# Ignores for Verilog
+verilog/work/
+
 # Ignore Vim Swapfiles
 *.swp
 
@@ -15,3 +18,4 @@ vsim.wlf
 modelsim.ini
 transcript
 vsim_stacktrace.vstf
+
