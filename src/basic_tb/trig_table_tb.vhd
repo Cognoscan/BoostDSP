@@ -41,27 +41,58 @@ architecture sim of trig_table_tb is
 --! Half period of clock line
 constant clk_hp : time := 1 ns;
 
-signal clk    : std_logic := '0'; --! Clock for UUT
-signal rst    : std_logic := '1'; --! Reset for UUT
-signal angle  : ufixed(-1 downto -9) := to_ufixed(0.0, -1, -9); --! Input angle
-signal sine   : sfixed(1 downto -6); --! Sine output
-signal cosine : sfixed(1 downto -6); --! Cosine output
+signal clk     : std_logic := '0'; --! Clock for UUT
+signal rst     : std_logic := '1'; --! Reset for UUT
+signal angle   : ufixed(-1 downto -9) := to_ufixed(0.0, -1, -9); --! Input angle
+signal sine    : sfixed(1 downto -6); --! Sine output
+signal cosine  : sfixed(1 downto -6); --! Cosine output
+signal sine2   : sfixed(1 downto -6); --! Sine output, uut2
+signal cosine2 : sfixed(1 downto -6); --! Cosine output, uut2
 
-signal vis_sine : signed(7 downto 0); --! Visualize output in Modelsim
-signal vis_cosine : signed(7 downto 0); --! Visualize output in Modelsim
+signal vis_sine    : signed(7 downto 0); --! Visualize output in Modelsim
+signal vis_cosine  : signed(7 downto 0); --! Visualize output in Modelsim
+signal vis_sine2   : signed(7 downto 0); --! Visualize output in Modelsim
+signal vis_cosine2 : signed(7 downto 0); --! Visualize output in Modelsim
 
 constant angle_lsb : real := 2.0**(angle'low); --! LSB of angle counter
+
+signal test_out : sfixed(
+  sfixed_high(sine'high, sine'low, '*', sine'high, sine'low) + 1 downto
+  sfixed_low( sine'high, sine'low, '*', sine'high, sine'low));
+
+signal test_out2 : sfixed(
+  sfixed_high(sine'high, sine'low, '*', sine'high, sine'low) + 1 downto
+  sfixed_low( sine'high, sine'low, '*', sine'high, sine'low));
+
+signal vis_test  : signed(test_out'length - 1 downto 0);
+signal vis_test2 : signed(test_out2'length - 1 downto 0);
 
 begin
 
   --! Trigometric Table Unit Under Test
   uut : basic_pkg.trig_table
+  generic map (
+    QUARTER_WAVE => true
+  )
   port map (
     clk    => clk,
     rst    => rst,
     angle  => angle,
     sine   => sine,
     cosine => cosine
+  );
+
+  --! Trigometric Table Unit Under Test
+  uut2 : basic_pkg.trig_table
+  generic map (
+    QUARTER_WAVE => false
+  )
+  port map (
+    clk    => clk,
+    rst    => rst,
+    angle  => angle,
+    sine   => sine2,
+    cosine => cosine2
   );
 
   --! Clock generator
@@ -87,9 +118,16 @@ begin
              fixed_wrap, fixed_truncate);
   end process;
 
-  --! Visualize sine output
-  vis_sine <= sfixed_as_signed(sine);
-  --! Visualize cosine output
-  vis_cosine <= sfixed_as_signed(cosine);
+  test_out <= sine*sine + cosine*cosine;
+  test_out2 <= sine2*sine2 + cosine2*cosine2;
+
+  --! Visualize sine & cosine output
+  vis_sine    <= sfixed_as_signed(sine);
+  vis_cosine  <= sfixed_as_signed(cosine);
+  vis_sine2   <= sfixed_as_signed(sine2);
+  vis_cosine2 <= sfixed_as_signed(cosine2);
+
+  vis_test <= sfixed_as_signed(test_out);
+  vis_test2 <= sfixed_as_signed(test_out2);
 
 end sim;

@@ -61,6 +61,7 @@ begin
     generic map (
       INTERNAL_SIZE => LFSR_LENGTH,
       SEED => 1,
+      USE_XNOR => TRUE,
       POLY => basic_pkg.maximal_polynomial(LFSR_LENGTH)
     ) port map (
       clk => clk,

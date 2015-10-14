@@ -31,12 +31,12 @@ use boostdsp.basic_pkg;
 
 --! Tests the boostdsp.strobed_trig_table entity.
 --! @TODO Use sfixed_as_signed to get vis_sine & vis_cosine.
-entity trig_table_tb is
+entity strobed_trig_table_tb is
 end entity;
 
 --! Tests the boostdsp.trig_table entity by running through all possible angle 
 --! values.
-architecture sim of trig_table_tb is
+architecture sim of strobed_trig_table_tb is
 
 constant clk_p : time := 2 ns; --! Clock period
 constant clk_hp : time := clk_p / 2; --! 1/2 clock period

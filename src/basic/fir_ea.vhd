@@ -46,15 +46,15 @@ entity fir is
   generic (
     SYMMETRIC : boolean := false; --! Symmetric filter
     EVEN      : boolean := false; --! Even or odd number of total coefficients
-    UPPER_BIT : integer; --! Upper bit of accumulator
-    LOWER_BIT : integer  --! Lower bit of accumulator
+    UPPER_BIT : integer;          --! Upper bit of accumulator
+    LOWER_BIT : integer           --! Lower bit of accumulator
   );
   port (
-    clk : in std_logic; --! Clock line
-    rst : in std_logic; --! Reset line
-    coeff : in sfixed_vector; --! Coefficient vector
-    din : in sfixed; --! Data into FIR filter
-    dout : out sfixed --! Filtered data
+    clk   : in  std_logic;     --! Clock line
+    rst   : in  std_logic;     --! Reset line
+    coeff : in  sfixed_vector; --! Coefficient vector
+    din   : in  sfixed;        --! Data into FIR filter
+    dout  : out sfixed         --! Filtered data
   );
 end entity fir;
 

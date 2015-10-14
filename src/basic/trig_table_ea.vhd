@@ -27,12 +27,48 @@ use work.fixed_pkg.all;
 use work.util_pkg.all;
 
 --! Sin & Cos lookup table.
---! Outputs cos(2*pi*angle) and sin(2*pi*angle), where 0 <= angle < 1.
+--! Outputs cos(2*pi*angle) and sin(2*pi*angle), where 0 <= angle < 1. By 
+--! default, it uses a quarter-wave table lookup. This uses up 1/4 the memory of 
+--! a full lookup table with no loss in fidelity, provided that the number of 
+--! output fractional bits is at least twice the number of fraction angle bits 
+--! plus 5.
 --!
---! @todo add generic option to use quarter-wave lookup tables and make it the 
---! default.
+--!
+--! ## Quarter Wave Lookup Table Details ##
+--!
+--! For quarter-wave table, the assumption that needs to hold is:
+--! sine'low > 2*angle'low + 5.3030
+--! 
+--! In fractional bits, this is: # fractional sine bits < 2*(angle bits) - 5.3030
+--! Simple Table of Requirement:
+--!
+--! | angle'low | min sin'low |
+--! | -5        | -4          |
+--! | -6        | -6          |
+--! | -7        | -8          |
+--! | -8        | -10         |
+--! | -9        | -12         |
+--! | -10       | -14         |
+--! | -11       | -16         |
+--! | -12       | -18         |
+--! | -13       | -20         |
+--! | -14       | -22         |
+--! | -15       | -24         |
+--!
+--! Derivation:
+--! The quarter-wave sine table implementation does not work if the delta 
+--! between angle=0.25 and angle=0.25+LSB creates a difference greater than 1/2 
+--! the LSB value of the output. If it is greater, then the sine table will 
+--! never output 1.0 for sin(pi/2), cos(0), etc.
+--! This can be expressed as 1-cos(2*pi*2^-n) < 2^(-m-1), where n is the number 
+--! of fractional angle bits, and m is the number of fractional output bits. 
+--! Using the small-angle approximation cos(x) = 1 - x^2/2 and simplifying, we 
+--! get the resultant equation m < 2*n - log2(pi^2) - 2, or m < 2*n - 5.3030.
 --!
 entity trig_table is
+  generic (
+    QUARTER_WAVE : boolean := true --! Use quarter-wave table
+  );
   port (
     clk : in std_logic; --! Clock line
     rst : in std_logic; --! Reset Line
@@ -80,13 +116,33 @@ architecture rtl of trig_table is
     return table;
   end function;
 
+  --! Function for generating quarter-wave sine lookup table
+  function quarter_sine_table (angle_width : natural; sine_high, sine_low : integer) return ufixed_vector is
+    --! Size of lookup table - 1
+    constant table_high : positive := 2**(angle_width-2) - 1;
+    --! Working copy of lookup table to return
+    variable table : ufixed_vector(table_high downto 0)
+      (sine_high-1 downto sine_low);
+    --! Working value of sine to convert for lookup table
+    variable sine_real : real;
+  begin
+    for i in 0 to table_high loop
+      sine_real := sin(math_2_pi * (real(i) / real(table_high + 1)));
+      table(i) := to_ufixed(sine_real, sine_high-1, sine_low);
+    end loop;
+    return table;
+  end function;
+
   --! Total width of useful angle bits (-1 downto angle'low)
   constant angle_width : positive := 0 - angle'low;
 
-  constant sine_lookup_table : sfixed_vector :=
-    sine_table(angle_width, sine'high, sine'low);
-  constant cosine_lookup_table : sfixed_vector :=
-    cosine_table(angle_width, cosine'high, cosine'low);
+  constant sine_lookup_table : sfixed_vector := sine_table(angle_width, sine'high, sine'low);
+
+  constant cosine_lookup_table : sfixed_vector := cosine_table(angle_width, cosine'high, cosine'low);
+
+  constant quarter_sine_lookup_table : sfixed_vector := quarter_sine_table(angle_width,
+                                                                           max(sine'high, cosine'high),
+                                                                           minimum(sine'low, cosine'low));
 
   --! std_logic_vector version of angle for lookup table
   signal lookup_bits : std_logic_vector((angle_width - 1) downto 0);
@@ -106,12 +162,16 @@ begin
   assert (cosine'high < 2)
     report "Sine will range from 1 to -1; more integer bits not necessary"
     severity warning;
+  assert (minimum(sine'low,cosine'low) > (2*angle'low + 5))
+    report "Quarter wave table will never return 1.0"
+    severity warning;
 
-  --! Casts the ufixed angle value as a std_logic_vectro for the lookup table.
+  --! Casts the ufixed angle value as a std_logic_vector for the lookup table.
   --! @todo There's got to be a more elegant way of doing this.
-  remap_lookup_bits : for i in lookup_bits'range generate
-    lookup_bits(i) <= std_logic(angle(i - angle_width));
-  end generate;
+  --! remap_lookup_bits : for i in lookup_bits'range generate
+  --!   lookup_bits(i) <= std_logic(angle(i - angle_width));
+  --! end generate;
+  lookup_bits <= to_slv(angle);
 
   --! Pipeline to look up values
   data_pipeline : process (clk, rst)
@@ -121,8 +181,36 @@ begin
         sine <= to_sfixed(0.0, sine);
         cosine <= to_sfixed(0.0, cosine);
       else
-        sine <= sine_lookup_table(to_integer(unsigned(lookup_bits)));
-        cosine <= cosine_lookup_table(to_integer(unsigned(lookup_bits)));
+        if (not QUARTER_WAVE) then
+          sine <= sine_lookup_table(to_integer(unsigned(lookup_bits)));
+          cosine <= cosine_lookup_table(to_integer(unsigned(lookup_bits)));
+        else
+          case (lookup_bits(lookup_bits'high downto (lookup_bits'high-1))) is
+            when b"00" =>
+              sine <= sine_lookup_table(to_integer(unsigned(
+                      lookup_bits((lookup_bits'high-2) downto 0))));
+              cosine <= cosine_lookup_table(to_integer(unsigned(
+                      not lookup_bits((lookup_bits'high-2) downto 0))));
+            when b"01" =>
+              sine <= sine_lookup_table(to_integer(unsigned(
+                      not lookup_bits((lookup_bits'high-2) downto 0))));
+              cosine <= -cosine_lookup_table(to_integer(unsigned(
+                      lookup_bits((lookup_bits'high-2) downto 0))));
+            when b"10" =>
+              sine <= -sine_lookup_table(to_integer(unsigned(
+                      lookup_bits((lookup_bits'high-2) downto 0))));
+              cosine <= -cosine_lookup_table(to_integer(unsigned(
+                      not lookup_bits((lookup_bits'high-2) downto 0))));
+            when b"11" =>
+              sine <= -sine_lookup_table(to_integer(unsigned(
+                      not lookup_bits((lookup_bits'high-2) downto 0))));
+              cosine <= cosine_lookup_table(to_integer(unsigned(
+                      lookup_bits((lookup_bits'high-2) downto 0))));
+            when others =>
+              sine <= to_sfixed(0.0, sine);
+              cosine <= to_sfixed(0.0, cosine);
+          end case;
+        end if;
       end if;
     end if;
   end process;

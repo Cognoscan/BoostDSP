@@ -24,6 +24,9 @@ package util_pkg is
   --! Find maximum of two integers (helper function)
   function max(i,j : integer) return integer;
 
+  --! Find minimum of two integers (helper function)
+  function minimum(i,j : integer) return integer;
+
   --! Reverse the std_logic vectors: x'low -> y'high, etc.
   function reverse(x : std_logic_vector) return std_logic_vector;
 
@@ -51,6 +54,14 @@ package body util_pkg is
   function max (i,j : integer) return integer is
   begin
     if i > j then return i;
+    else return j;
+    end if;
+  end function;
+
+  -- Find minimum of two integers (helper function)
+  function minimum (i,j : integer) return integer is
+  begin
+    if i < j then return i;
     else return j;
     end if;
   end function;

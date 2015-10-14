@@ -28,21 +28,39 @@ use work.util_pkg.all;
 
 package basic_pkg is
 
+--! Takes in complex data in rectangular format and calculates the magnitude 
+--! and phase from them (giving polar form of the complex number). The 
+--! phase_out angle is normalized to be from 0 to 1. To get the phase in 
+--! radians, multiply it by 2*pi.
+  component cordic_polar is
+  generic (
+    NUM_STAGES : positive
+  );
+  port (
+    clk       : in std_logic; --! Clock line
+    rst       : in std_logic; --! Reset line
+    i_in      : in sfixed;    --! In-phase (real) data
+    q_in      : in sfixed;    --! Quadrature (imaginary) data
+    mag_out   : out sfixed;   --! Magnitude Output
+    phase_out : out ufixed    --! Phase Output
+  );
+  end component;
+
 --! Linear Feedback shift register using direct-type feedback.
---! The direct feedback feeds the result of the polynomial into the highest bit. 
+--! The direct feedback feeds the result of the polynomial into the highest bit.  
 --! Usethe maximal_polynomial function for easy generation of maximal length 
 --! polynomials up to 32 bits long.
   component lfsr_direct is
   generic (
     INTERNAL_SIZE : positive;    --! Set internal size of LFSR
     SEED          : natural;     --! Choose custom seed of LFSR
-    USE_XNOR      : boolean := true;  --! Use XNOR instead of XOR for feedback
-    POLY   : std_logic_vector --! Polynomial for LFSR to use 
+    USE_XNOR      : boolean;  --! Use XNOR instead of XOR for feedback
+    POLY          : std_logic_vector --! Polynomial for LFSR to use );
   );
   port (
-    clk : in  std_logic; --! System clock
-    rst : in  std_logic; --! System reset
-    q   : out std_logic_vector --! Output of LFSR
+    clk           : in  std_logic; --! System clock
+    rst           : in  std_logic; --! System reset
+    q             : out std_logic_vector --! Output of LFSR
   );
   end component;
 
@@ -54,7 +72,7 @@ package basic_pkg is
   generic (
     INTERNAL_SIZE : positive;    --! Set internal size of LFSR
     SEED          : natural;     --! Choose custom seed of LFSR
-    USE_XNOR      : boolean := true;  --! Use XNOR instead of XOR for feedback
+    USE_XNOR      : boolean;  --! Use XNOR instead of XOR for feedback
     POLY   : std_logic_vector --! Polynomial for LFSR to use 
   );
   port (
@@ -67,13 +85,16 @@ package basic_pkg is
 --! Sin & Cos lookup table.
 --! Outputs cos(2*pi*angle) and sin(2*pi*angle), where 0 <= angle < 1.
   component trig_table is
+    generic (
+      QUARTER_WAVE : boolean := true --! Use quarter-wave table
+    );
     port (
-    clk : in std_logic; --! Clock line
-    rst : in std_logic; --! Reset Line
-    angle : in ufixed; --! Normalized angle (0 <= angle < 1)
-    sine : out sfixed; --! sin(2*pi*angle)
-    cosine : out sfixed --! cos(2*pi*angle)
-         );
+      clk    : in std_logic; --! Clock line
+      rst    : in std_logic; --! Reset Line
+      angle  : in ufixed;    --! Normalized angle (0 <= angle < 1)
+      sine   : out sfixed;   --! sin(2*pi*angle)
+      cosine : out sfixed    --! cos(2*pi*angle)
+    );
   end component;
 
   --! Data strobed Sin & Cos lookup table. Finds new values every time strobe_in 
@@ -81,12 +102,12 @@ package basic_pkg is
   --! Outputs cos(2*pi*angle) and sin(2*pi*angle), where 0 <= angle < 1.
   component strobed_trig_table is
     port (
-           clk : in std_logic; --! Clock line
-           rst : in std_logic; --! Reset Line
-           angle : in ufixed; --! Normalized angle (0 <= angle < 1)
-           strobe_in : in std_logic; --! Data strobe input
-           sine : out sfixed; --! sin(2*pi*angle)
-           cosine : out sfixed; --! cos(2*pi*angle)
+           clk        : in std_logic; --! Clock line
+           rst        : in std_logic; --! Reset Line
+           angle      : in ufixed;    --! Normalized angle (0 <= angle < 1)
+           strobe_in  : in std_logic; --! Data strobe input
+           sine       : out sfixed;   --! sin(2*pi*angle)
+           cosine     : out sfixed;   --! cos(2*pi*angle)
            strobe_out : out std_logic --! Data strobe output
          );
   end component;
@@ -107,24 +128,24 @@ package basic_pkg is
 
   component symbolizer is
     port (
-           clk          : in std_logic; --! System clock
-           rst          : in std_logic; --! System reset
+           clk          : in std_logic;        --! System clock
+           rst          : in std_logic;        --! System reset
            data_in      : in std_logic_vector; --! Incoming data
-           busy         : out std_logic; --! Busy (cannot fetch data)
-           data_valid   : in std_logic; --! Strobe when data_in valid
-           fetch_symbol : in std_logic; --! System fetching next symbol
+           busy         : out std_logic;       --! Busy (cannot fetch data)
+           data_valid   : in std_logic;        --! Strobe when data_in valid
+           fetch_symbol : in std_logic;        --! System fetching next symbol
            symbol_out   : out std_logic_vector --! Outgoing symbol
          );
   end component;
 
   component symbolizer_even is
     port (
-           clk          : in std_logic; --! System clock
-           rst          : in std_logic; --! System reset
+           clk          : in std_logic;        --! System clock
+           rst          : in std_logic;        --! System reset
            data_in      : in std_logic_vector; --! Incoming data
-           busy         : out std_logic; --! Busy (cannot fetch data)
-           data_valid   : in std_logic; --! Strobe when data_in valid
-           fetch_symbol : in std_logic; --! System fetching next symbol
+           busy         : out std_logic;       --! Busy (cannot fetch data)
+           data_valid   : in std_logic;        --! Strobe when data_in valid
+           fetch_symbol : in std_logic;        --! System fetching next symbol
            symbol_out   : out std_logic_vector --! Outgoing symbol
          );
   end component;
@@ -138,7 +159,7 @@ package basic_pkg is
   port (
          clk : in std_logic; --! Clock line
          rst : in std_logic; --! Reset line
-         din : in sfixed --! Data to read
+         din : in sfixed     --! Data to read
        );
   end component;
 
