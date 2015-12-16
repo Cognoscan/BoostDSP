@@ -22,19 +22,19 @@ ANGLE_WIDTH and SINE_WIDTH local parameters. You will likely not need to do this
 
 
 module functionGen #(
-    parameter OUT_WIDTH = 16,      // Output word width
-    parameter FREQ_WIDTH = 16,     // Input frequency word width
-    parameter INCLUDE_CLAMP = 1'b1 // Clamp the output to prevent wraparound
+    parameter OUT_WIDTH = 16,      ///< Output word width
+    parameter FREQ_WIDTH = 16,     ///< Input frequency word width
+    parameter INCLUDE_CLAMP = 1'b1 ///< Clamp the output to prevent wraparound
 )
 (
     // Inputs
-    input clk,                       // System clock
-    input rst,                       // Synchronous reset, active high
-    input en,                        // Output next sample when high
-    input [1:0] waveType,            // Waveform type (see top description)
-    input [FREQ_WIDTH-1:0] freq,     // Frequency
-    input [OUT_WIDTH-1:0] offset,    // Offset value
-    input [OUT_WIDTH-1:0] amplitude, // Amplitude of waveform
+    input clk,                       ///< System clock
+    input rst,                       ///< Synchronous reset, active high
+    input en,                        ///< Output next sample when high
+    input [1:0] waveType,            ///< Waveform type (see top description)
+    input [FREQ_WIDTH-1:0] freq,     ///< Frequency
+    input [OUT_WIDTH-1:0] offset,    ///< Offset value
+    input [OUT_WIDTH-1:0] amplitude, ///< Amplitude of waveform
     // Outputs
     output signed [OUT_WIDTH-1:0] outSignal
 );
