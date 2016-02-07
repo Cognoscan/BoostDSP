@@ -6,12 +6,12 @@ will be passed through.
 */
 
 module GlitchFilter #(
-    FILT_LEN = 1
+    parameter FILT_LEN = 1
 )
 (
-    input clk,
-    input inData,
-    output outData
+    input  wire clk,
+    input  wire inData,
+    output reg  outData
 );
 
 localparam TRUE_FILT_LEN = (FILT_LEN > 0) ? FILT_LEN : 1; // Must be at least 1

@@ -2,6 +2,10 @@
 
 # Ignores for Verilog
 verilog/work/
+verilog/xsim.dir/
+verilog/build/
+verilog/xvlog.log
+verilog/xvlog.pb
 
 # Ignore Vim Swapfiles
 *.swp
