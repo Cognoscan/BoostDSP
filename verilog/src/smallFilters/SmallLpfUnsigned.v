@@ -1,9 +1,12 @@
-/**
-# SmallLpf - Single-pole IIR Low-Pass Filter #
+/*
+# SmallLpfUnsigned - Single-pole IIR Low-Pass Filter #
 
 Small Single-Pole IIR low-pass filter, made using just adders and bit shifts. 
 Set the filter frequency using the FILT_BITS parameter. It can be slowed down by 
 strobing the `en` bit to run at a lower rate.
+
+This filter takes in an unsigned input. Signed words are handled by the SmallLpf 
+module.
 
 By using power of two feedback terms, this filter is always stable and is immune 
 to limit cycling.
@@ -27,19 +30,19 @@ FILT_BITS = log2( f_clk / (2*pi*f_cutoff))
 
 */
 
-module SmallLpf #(
-    parameter WIDTH     = 8, ///< Width of data path
-    parameter FILT_BITS = 8  ///< Number of additional bits used by filter
+module SmallLpfUnsigned #(
+    parameter WIDTH = 8,
+    parameter FILT_BITS = 8
 )
 (
-    input  clk,                       ///< System clock
-    input  rst,                       ///< Reset, active high and synchronous
-    input  en,                        ///< Filter enable
-    input  signed [WIDTH-1:0] dataIn, ///< Filter input
-    output signed [WIDTH-1:0] dataOut ///< Filter output
+    input  clk,                // System clock
+    input  rst,                // Reset, active high and synchronous
+    input  en,                 // Filter enable
+    input  [WIDTH-1:0] dataIn, // Filter input
+    output [WIDTH-1:0] dataOut // Filter output
 );
 
-reg signed [WIDTH+FILT_BITS-1:0] filter;
+reg [WIDTH+FILT_BITS-1:0] filter;
 
 assign dataOut = filter[WIDTH+FILT_BITS-1:FILT_BITS];
 

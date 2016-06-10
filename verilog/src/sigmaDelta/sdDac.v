@@ -3,6 +3,7 @@ module sdDac #(
 ) (
     input clk,
     input rst,
+    input en,
     input [WIDTH-1:0] in,
     output reg dac
 );
@@ -14,8 +15,7 @@ always @(posedge clk) begin
         error <= 0;
         dac <= 1'b0;
     end
-    else
-    begin
+    else if (en) begin
         {dac, error} <= error + {~in[WIDTH-1], in[WIDTH-2:0]};
     end
 end

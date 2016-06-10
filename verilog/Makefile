@@ -3,6 +3,9 @@
 #VLOG=xvlog
 #VFLAGS= --work work
 #SVFLAGS= --sv --work work
+# Simulate with:
+# 	xelab -debug typical <TOP> -s top_sim
+# 	xsim top_sim -gui -t xsim_run.tcl
 
 # MODELSIM Simulation Parameters
 VLOG=vlog
