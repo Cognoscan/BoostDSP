@@ -1,9 +1,9 @@
 /**
-# SmallBpf - 2-pole IIR Bandpass Filter #
+# SmallHpf2nd - 2-pole IIR High-Pass Filter #
 
-Small 2-Pole IIR band-pass filter, made using just adders and bit shifts. Set 
-the frequency using the K0_SHIFT and K1_SHIFT parameters. It can be slowed down by 
-strobing the `en` bit to run at a lower rate.
+Small 2-Pole IIR high-pass filter, made using just adders and bit shifts. Set 
+the frequency using the K0_SHIFT and K1_SHIFT parameters. It can be slowed down 
+by strobing the `en` bit to run at a lower rate.
 
 By using power of two feedback terms, this filter is alsways stable and is 
 immune to limit cycling.
@@ -14,18 +14,16 @@ in mind that clamping will cause nonlinear distortion in high-amplitude signals.
 
 ## Design Equations ##
 
-Let w0 be the desired center frequency in radians/second, let f_clk be the 
+Let w0 be the desired cutoff frequency in radians/second, let f_clk be the 
 filter run rate (defined by clk and en), and let Q be the desired quality 
-factor. Quality factor can be defined as the center frequency divided by the 
-bandwidth.
+factor.
 
 ```
-              (w0/Q)*s
+                s^2
 H(s) = -----------------------
         s^2 + (w0/Q)*s + w0^2
 
 w0 = 2*pi*f0
-Q  = f0 / f_bandwidth
 
 K0_SHIFT = -log2(w0/Q / f_clk)
 K1_SHIFT  = -log2(w0*Q / f_clk)
@@ -50,56 +48,61 @@ Key:
 
 ```
 
-dataIn --->(SUB)--->(SUB)--->[ACCUM]--->[2^-K0_SHIFT]--+--> dataOut
+dataIn --->(SUB)--->(SUB)------------------------------+--> dataOut
              ^        ^                                |
              |        |                                |
-             |        \----[2^-K1_SHIFT]<---[ACCUM]<---+
+             |        +----[2^-K0_SHIFT]<---[ACCUM]<---/
+             |        |
+             |        \--------------------------------\
              |                                         |
-             \-----------------------------------------/
+             \-------------[2^-K1_SHIFT]<---[ACCUM]<---/
+
 ```
 
 
 */
 
-module SmallBpf #(
-    parameter WIDTH        = 16, ///< Data width
-    parameter K0_SHIFT     = 10, ///< Gain on forward path accumulator
-    parameter K1_SHIFT     = 18, ///< Gain on feedback path accumulator
-    parameter CLAMP        = 1   ///< Set to 1 to clamp the accumulators
+
+module SmallHpf2nd #(
+    parameter K0_SHIFT = 8, ///< K0 filter term = 2^-K0_SHIFT
+    parameter K1_SHIFT = 8, ///< K1 filter term = 2^-K1_SHIFT
+    parameter WIDTH = 16,   ///< Width of data path
+    parameter CLAMP = 1     ///< Set to 1 to clamp the accumulators
 )
 (
-    input  clk,                       ///< System clock
-    input  rst,                       ///< Reset, active high and synchronous
-    input  en,                        ///< Filter enable
+    input clk,                        ///< System clock
+    input rst,                        ///< Reset, synchronous & active high
+    input en,                         ///< Filter strobe
     input  signed [WIDTH-1:0] dataIn, ///< Filter input
-    output signed [WIDTH-1:0] dataOut ///< Filter output
+    output signed [WIDTH-1:0] dataOut ///< Filter input
 );
 
 reg signed [WIDTH+K0_SHIFT-1:0] acc0;
 reg signed [WIDTH+K1_SHIFT-1:0] acc1;
-reg signed [WIDTH+1:0] forwardIn;
+reg signed [WIDTH-1:0] forwardPath;
 
-wire signed [WIDTH-1:0] feedbackOut;
+wire signed [WIDTH-1:0] acc0Out;
+wire signed [WIDTH-1:0] acc1Out;
 wire signed [WIDTH+K0_SHIFT:0] acc0In;
 wire signed [WIDTH+K1_SHIFT:0] acc1In;
 
-assign acc0In = acc0 + forwardIn;
-assign acc1In = acc1 + dataOut;
+assign acc0In = acc0 + dataOut;
+assign acc1In = acc1 + acc0Out;
 
 always @(posedge clk) begin
     if (rst) begin
-        forwardIn <= 'd0;
-        acc0      <= 'd0;
-        acc1      <= 'd0;
+        forwardPath <= 'd0;
+        acc0        <= 'd0;
+        acc1        <= 'd0;
     end
     else if (en) begin
-        forwardIn <= dataIn - dataOut - feedbackOut;
+        forwardPath <= dataIn - acc0Out - acc1Out;
         if (CLAMP) begin
             acc0 <= (^acc0In[WIDTH+K0_SHIFT-:2])
                   ? {acc0In[WIDTH+K0_SHIFT], {(WIDTH+K0_SHIFT-1){acc0In[WIDTH+K0_SHIFT-1]}}}
                   : acc0In;
-            acc1 <= (^acc1In[WIDTH+K0_SHIFT-:2])
-                  ? {acc1In[WIDTH+K0_SHIFT], {(WIDTH+K0_SHIFT-1){acc1In[WIDTH+K0_SHIFT-1]}}}
+            acc1 <= (^acc1In[WIDTH+K1_SHIFT-:2])
+                  ? {acc1In[WIDTH+K1_SHIFT], {(WIDTH+K1_SHIFT-1){acc1In[WIDTH+K1_SHIFT-1]}}}
                   : acc1In;
         end
         else begin
@@ -109,8 +112,9 @@ always @(posedge clk) begin
     end
 end
 
-assign dataOut     = acc0 >>> K0_SHIFT;
-assign feedbackOut = acc1 >>> K1_SHIFT;
+assign dataOut = forwardPath;
+assign acc0Out = acc0 >>> K0_SHIFT;
+assign acc1Out = acc1 >>> K1_SHIFT;
 
 // Test Code: Check to see if clamping ever occurs
 /*

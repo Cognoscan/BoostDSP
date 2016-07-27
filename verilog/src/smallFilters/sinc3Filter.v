@@ -9,6 +9,7 @@
 // where long single-bit delay lines can be cheaply implemented. For any other 
 // device, it is almost certainly better to implement the 3 accumulators first, 
 // decimate, then implement the differentiator stages.
+
 module sinc3Filter #(
     parameter OSR = 16 // Output width is 3*ceil(log2(OSR))+1
 )

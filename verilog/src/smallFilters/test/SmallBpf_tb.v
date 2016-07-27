@@ -1,11 +1,11 @@
-module SmallLpf2nd_tb ();
+module SmallBpf_tb ();
 
-parameter K0_SHIFT = 6; ///< K0 filter term = 2^-K0_SHIFT
-parameter K1_SHIFT = 6; ///< K1 filter term = 2^-K1_SHIFT
+parameter K0_SHIFT = 5; ///< K0 filter term = 2^-K0_SHIFT
+parameter K1_SHIFT = 5; ///< K1 filter term = 2^-K1_SHIFT
 parameter WIDTH = 16;   ///< Width of data path
 parameter CLAMP = 1;    ///< Set to 1 to clamp the accumulators
 
-parameter FREQ_RATE = 1000000;
+parameter FREQ_RATE = 512000;
 
 reg clk;
 reg rst;
@@ -32,7 +32,7 @@ end
 
 always #1 clk = ~clk;
 
-SmallLpf2nd #(
+SmallBpf #(
     .K0_SHIFT(K0_SHIFT), ///< K0 filter term = 2^-K0_SHIFT
     .K1_SHIFT(K1_SHIFT), ///< K1 filter term = 2^-K1_SHIFT
     .WIDTH   (WIDTH   ), ///< Width of data path

@@ -1,9 +1,9 @@
 /**
-# SmallBpf - 2-pole IIR Bandpass Filter #
+# SmallBsf - 2-pole IIR Bandstop Filter #
 
-Small 2-Pole IIR band-pass filter, made using just adders and bit shifts. Set 
-the frequency using the K0_SHIFT and K1_SHIFT parameters. It can be slowed down by 
-strobing the `en` bit to run at a lower rate.
+Small 2-Pole IIR band-stop filter, made using just adders and bit shifts. Set 
+the frequency using the K0_SHIFT and K1_SHIFT parameters. It can be slowed down 
+by strobing the `en` bit to run at a lower rate.
 
 By using power of two feedback terms, this filter is alsways stable and is 
 immune to limit cycling.
@@ -20,7 +20,7 @@ factor. Quality factor can be defined as the center frequency divided by the
 bandwidth.
 
 ```
-              (w0/Q)*s
+             s^2 + w0^2
 H(s) = -----------------------
         s^2 + (w0/Q)*s + w0^2
 
@@ -50,18 +50,20 @@ Key:
 
 ```
 
-dataIn --->(SUB)--->(SUB)--->[ACCUM]--->[2^-K0_SHIFT]--+--> dataOut
-             ^        ^                                |
-             |        |                                |
-             |        \----[2^-K1_SHIFT]<---[ACCUM]<---+
+dataIn --->(SUB)---------------------------------------+--> dataOut
+             ^                                         |
              |                                         |
-             \-----------------------------------------/
+             +----[2^-K0_SHIFT]<---[ACCUM]<--(SUB)-----/
+             |                                 ^
+             |                                 |
+             \----[ACCUM]--->[2^-K1_SHIFT]-----/
+
 ```
 
 
 */
 
-module SmallBpf #(
+module SmallBsf #(
     parameter WIDTH        = 16, ///< Data width
     parameter K0_SHIFT     = 10, ///< Gain on forward path accumulator
     parameter K1_SHIFT     = 18, ///< Gain on feedback path accumulator
@@ -77,23 +79,24 @@ module SmallBpf #(
 
 reg signed [WIDTH+K0_SHIFT-1:0] acc0;
 reg signed [WIDTH+K1_SHIFT-1:0] acc1;
-reg signed [WIDTH+1:0] forwardIn;
+reg signed [WIDTH-1:0] forwardPath;
 
-wire signed [WIDTH-1:0] feedbackOut;
+wire signed [WIDTH-1:0] acc0Out;
+wire signed [WIDTH-1:0] acc1Out;
 wire signed [WIDTH+K0_SHIFT:0] acc0In;
 wire signed [WIDTH+K1_SHIFT:0] acc1In;
 
-assign acc0In = acc0 + forwardIn;
-assign acc1In = acc1 + dataOut;
+assign acc0In = acc0 + forwardPath - acc1Out;
+assign acc1In = acc1 + acc0Out;
 
 always @(posedge clk) begin
     if (rst) begin
-        forwardIn <= 'd0;
-        acc0      <= 'd0;
-        acc1      <= 'd0;
+        forwardPath <= 'd0;
+        acc0        <= 'd0;
+        acc1        <= 'd0;
     end
     else if (en) begin
-        forwardIn <= dataIn - dataOut - feedbackOut;
+        forwardPath <= dataIn - acc0Out;
         if (CLAMP) begin
             acc0 <= (^acc0In[WIDTH+K0_SHIFT-:2])
                   ? {acc0In[WIDTH+K0_SHIFT], {(WIDTH+K0_SHIFT-1){acc0In[WIDTH+K0_SHIFT-1]}}}
@@ -109,11 +112,11 @@ always @(posedge clk) begin
     end
 end
 
-assign dataOut     = acc0 >>> K0_SHIFT;
-assign feedbackOut = acc1 >>> K1_SHIFT;
+assign dataOut = forwardPath;
+assign acc0Out = acc0 >>> K0_SHIFT;
+assign acc1Out = acc1 >>> K1_SHIFT;
 
 // Test Code: Check to see if clamping ever occurs
-/*
 reg clamp0;
 reg clamp1;
 always @(posedge clk) begin
@@ -126,6 +129,5 @@ always @(posedge clk) begin
         clamp1 <= clamp1 | (^acc1In[WIDTH+K1_SHIFT-:2]);
     end
 end
-*/
 
 endmodule
