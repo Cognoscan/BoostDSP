@@ -101,8 +101,8 @@ always @(posedge clk) begin
             acc0 <= (^acc0In[WIDTH+K0_SHIFT-:2])
                   ? {acc0In[WIDTH+K0_SHIFT], {(WIDTH+K0_SHIFT-1){acc0In[WIDTH+K0_SHIFT-1]}}}
                   : acc0In;
-            acc1 <= (^acc1In[WIDTH+K0_SHIFT-:2])
-                  ? {acc1In[WIDTH+K0_SHIFT], {(WIDTH+K0_SHIFT-1){acc1In[WIDTH+K0_SHIFT-1]}}}
+            acc1 <= (^acc1In[WIDTH+K1_SHIFT-:2])
+                  ? {acc1In[WIDTH+K1_SHIFT], {(WIDTH+K1_SHIFT-1){acc1In[WIDTH+K1_SHIFT-1]}}}
                   : acc1In;
         end
         else begin
