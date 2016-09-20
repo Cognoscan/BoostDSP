@@ -34,11 +34,11 @@ sim: $(VOBJS) $(SVOBJS)
 
 $(BUILDDIR)/%.ov: $(SRCDIR)/%.v
 	@mkdir -p $(dir $@)
-	$(VLOG) $(VFLAGS) $< && touch $@
+	-$(VLOG) $(VFLAGS) $< && touch $@
 
 $(BUILDDIR)/%.osv: $(SRCDIR)/%.sv
 	@mkdir -p $(dir $@)
-	$(VLOG) $(SVFLAGS) $< && touch $@
+	-$(VLOG) $(SVFLAGS) $< && touch $@
 
 clean:
 	$(RM) -rf $(BUILDDIR)
