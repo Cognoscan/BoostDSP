@@ -5,9 +5,11 @@
 //
 // 3 dB bandwidth for 64 oversampling is about Fclk / 202, it seems.
 
-module sigmaDelta2ndOrder #(
-    parameter WIDTH = 16,
-    parameter GROWTH = 2
+module SigmaDelta2ndOrder #(
+    parameter WIDTH  = 16,      ///< Input width
+    parameter GAIN   = 7.0/6.0, ///< Gain parameter
+    parameter GROWTH = 2,       ///< Growth bits on accumulators
+    parameter CLAMP  = 0        ///< Clamp accumulators
 ) 
 (
     input clk,
@@ -30,10 +32,19 @@ module sigmaDelta2ndOrder #(
 //
 // [1] S. Hein and A. Zakhor, "On the stability of sigma delta modulators," IEEE
 //     Trans Signal Proc., vol. 41, no. 7, pp. 2322-2348, July 1993. 
-localparam integer GAIN = 2.0**(WIDTH-1)*1.16;
+localparam integer GAIN1 = 2.0**(WIDTH-1);
+localparam integer GAIN2 = 2.0**(WIDTH-1)*GAIN;
+localparam ACC1_WIDTH = WIDTH+GROWTH;
+localparam ACC2_WIDTH = WIDTH+2*GROWTH;
 
-reg signed [WIDTH+GROWTH-1:0] acc1;
-reg signed [WIDTH+2*GROWTH-1:0] acc2;
+reg signed [ACC1_WIDTH-1:0] acc1;
+reg signed [ACC2_WIDTH-1:0] acc2;
+
+wire signed [ACC1_WIDTH:0] acc1Calc;
+wire signed [ACC2_WIDTH:0] acc2Calc;
+
+assign acc1Calc = acc1 + in       + $signed(acc2[ACC2_WIDTH-1] ? GAIN1 : -GAIN1);
+assign acc2Calc = acc2 + acc1Calc + $signed(acc2[ACC2_WIDTH-1] ? GAIN2 : -GAIN2);
 
 initial begin
     acc1 = 'd0;
@@ -45,8 +56,16 @@ always @(posedge clk) begin
         acc1 <= 'd0;
         acc2 <= 'd0;
     end else if (en) begin
-        acc1 <= acc1 + in + ($signed({sdOut,1'b1})*GAIN);
-        acc2 <= acc2 + acc1 + in + ($signed({sdOut,1'b1}) * (GAIN + 2**WIDTH));
+        if (CLAMP) begin
+            acc1 <= (^acc1Calc[ACC1_WIDTH-:2]) ? {acc1Calc[ACC1_WIDTH], {(ACC1_WIDTH-1){acc1Calc[ACC1_WIDTH-1]}}}
+                                               : acc1Calc;
+            acc2 <= (^acc2Calc[ACC2_WIDTH-:2]) ? {acc2Calc[ACC2_WIDTH], {(ACC2_WIDTH-1){acc2Calc[ACC2_WIDTH-1]}}}
+                                               : acc2Calc;
+        end
+        else begin
+            acc1 <= acc1Calc;
+            acc2 <= acc2Calc;
+        end
     end
 end
 
