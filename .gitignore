@@ -25,3 +25,9 @@ transcript
 vsim_stacktrace.vstf
 wave.do
 
+# Ignore Vivado Sim files
+*.jou
+*.log
+top_sim.wdb
+xelab.pb
+
