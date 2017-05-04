@@ -1,7 +1,15 @@
+/**
+
+# FileSink
+
+Writes an array of signed integers to a file.
+
+*/
+
 module FileSink #(
-    parameter FILE_NAME = "out.log",
-    parameter IN_WIDTH  = 8,
-    parameter IN_NUM    = 8
+    parameter FILE_NAME = "out.log", ///< Name of file to write to
+    parameter IN_WIDTH  = 8,         ///< Bit width of an item in dataIn
+    parameter IN_NUM    = 8          ///< Number of items in dataIn
 )
 (
     input logic clk,    ///< System clock

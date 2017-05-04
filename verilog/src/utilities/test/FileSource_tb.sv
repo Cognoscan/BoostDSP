@@ -4,6 +4,7 @@ module FileSource_tb ();
 parameter FILE_NAME = "out.log";
 parameter OUT_WIDTH  = 16;
 parameter OUT_NUM    = 8;
+parameter CYCLE      = 1;
 
 // UUT Signals
 logic clk; ///< System clock
@@ -24,6 +25,11 @@ localparam INCR = (OUT_WIDTH <= 8) ? 1 : 2**(OUT_WIDTH-8);
 always #1 clk = ~clk;
 
 initial begin
+    $display("Testing FileSource");
+    $display("FILE_NAME = %s", FILE_NAME);
+    $display("OUT_WIDTH = %d", OUT_WIDTH);
+    $display("OUT_NUM   = %d", OUT_NUM  );
+    $display("CYCLE     = %d", CYCLE    );
     pass = 1'b1;
     clk = 1'b0;
     rst = 1'b0;
@@ -42,7 +48,7 @@ initial begin
     $fclose(fileTest);
     // Read it back and verify it
     @(posedge clk) en = 1'b1;
-    for (int i=0; i<(2**OUT_WIDTH); i=i+INCR) begin
+    for (int i=0; i<(2**(OUT_WIDTH+CYCLE)); i=i+INCR) begin
         @(negedge clk)
         expected = $signed(i[OUT_WIDTH-1:0]);
         readback = dataOut[0];
@@ -73,6 +79,7 @@ FileSource #(
     .FILE_NAME(FILE_NAME),
     .OUT_WIDTH(OUT_WIDTH),
     .OUT_NUM  (OUT_NUM  )
+    .CYCLE    (CYCLE    )
 )
 uut (
     .clk(clk), ///< System clock
