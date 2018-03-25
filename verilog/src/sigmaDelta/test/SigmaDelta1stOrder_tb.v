@@ -1,41 +1,44 @@
 module SigmaDelta1stOrder_tb ();
 
-parameter WIDTH  = 16;      ///< Input width
+parameter OUT_WIDTH = 8;
+parameter WIDTH = 16;
 
-parameter FREQ_RATE = 2000000;
-
-reg clk;
-reg rst;
-reg en;
+// UUT Signals
+reg clk;                    ///< System Clock
+reg rst;                    ///< Reset, active high & synchronous
+reg en;                     ///< Enable (use to clock at slower rate)
 reg signed [WIDTH-1:0] in;
-wire sdOut;
-wire signed [WIDTH-1:0] dataOut;
+wire [OUT_WIDTH-1:0] sdOut; ///< Sigma-delta input
+wire sdOut2;
 
+// Testbench Signals
+wire [WIDTH-1:0] out; ///< Magnitude of in
 integer i;
-
-initial begin
-    clk = 1'b0;
-    rst = 1'b1;
-    en = 1'b1;
-    in = 'd0;
-    #2 rst = 1'b0;
-    #20000 in = 2**(WIDTH-1)-1;
-    #20000 in = -2**(WIDTH-1)+1;
-    #20000 in = 'd0;
-    #20000 in = 'd0;
-    for (i=1; i<2**16; i=i+1) begin
-        @(posedge clk) in = $rtoi($sin($itor(i)**2*3.14159/FREQ_RATE)*(2**(WIDTH-1)-1));
-    end
-    for (i=1; i<2**16; i=i+1) begin
-        @(posedge clk) in = $random();
-    end
-    $stop();
-end
 
 always #1 clk = ~clk;
 
+initial begin
+    clk    = 1'b0;
+    rst    = 1'b1;
+    en     = 1'b1;
+    in = 'd0;
+    @(posedge clk) rst = 1'b1;
+    @(posedge clk) rst = 1'b1;
+    @(posedge clk) rst = 1'b0;
+    #10000 in =  (2**(WIDTH-1))-1;
+    #10000 in = -(2**(WIDTH-1));
+    #10000 in =  (2**(WIDTH-2));
+    #10000 in = -(2**(WIDTH-2));
+    #10000 in = 0;
+    for (i=0; i<2**18; i=i+1) begin
+        @(posedge clk) in = $rtoi((2.0**(WIDTH-1)-1)*$sin(3.141259*2.0*($itor(i)/2.0**15 + $itor(i)**2/2.0**22)));
+    end
+    #10000 $stop();
+end
+
 SigmaDelta1stOrder #(
-    .WIDTH (WIDTH) ///< Input width
+    .WIDTH(WIDTH),
+    .OUT_WIDTH(OUT_WIDTH)
 ) 
 uut (
     .clk(clk),
@@ -45,16 +48,26 @@ uut (
     .sdOut(sdOut)
 );
 
-sinc3Filter #(
-    .OSR(32) // Output width is 3*ceil(log2(OSR))+1
-)
-testFilter (
+SigmaDelta1stOrder #(
+    .WIDTH(WIDTH),
+    .OUT_WIDTH(1)
+) 
+uut2 (
     .clk(clk),
-    .en(en),      ///< Enable (use to clock at slower rate)
-    .in(sdOut),
-    .out(dataOut) ///< [3*$clog2(OSR):0]
+    .rst(rst),
+    .en(en),
+    .in(in), ///< [WIDTH-1:0] 
+    .sdOut(sdOut2)
 );
 
-
+Sinc3Filter #(
+    .OSR(32) // Output width is 3*ceil(log2(OSR))+1
+)
+filterOut (
+    .clk(clk),
+    .en(en), ///< Enable (use to clock at slower rate)
+    .in(sdOut2),
+    .out(out) ///< [3*$clog2(OSR):0] 
+);
 
 endmodule

@@ -66,7 +66,7 @@ uut (
     .out(out)  ///< [WIDTH-1:0] Magnitude of signal
 );
 
-sinc3Filter #(
+Sinc3Filter #(
     .OSR(16) // Output width is 3*ceil(log2(OSR))+1
 )
 derp

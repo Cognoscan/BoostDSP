@@ -12,7 +12,7 @@ reg rst;
 reg en;
 reg signed [WIDTH-1:0] in;
 wire sdOut;
-wire signed [WIDTH-1:0] dataOut;
+wire signed [15:0] dataOut;
 
 integer i;
 
@@ -51,7 +51,7 @@ uut (
     .sdOut(sdOut)
 );
 
-sinc3Filter #(
+Sinc3Filter #(
     .OSR(32) // Output width is 3*ceil(log2(OSR))+1
 )
 testFilter (

@@ -1,12 +1,17 @@
 module SmallLpf_tb ();
 
+parameter WIDTH = 9;
+parameter FILT_BITS = 10;
+
+parameter FREQ_RATE = 1000000;
+
 reg clk;
 reg rst;
 reg en;
-reg signed [7:0] dataIn;
-wire signed [7:0] dataOut;
+reg signed [WIDTH-1:0] dataIn;
+wire signed [WIDTH-1:0] dataOut;
 
-integer i, j;
+integer i;
 
 initial begin
     clk = 1'b0;
@@ -14,25 +19,30 @@ initial begin
     en = 1'b1;
     dataIn = 'd0;
     #2 rst = 1'b0;
-    for (i=1; i<100; i=i+1) begin
-        for (j=0; j<2048; j=j+1) begin
-            @(posedge clk) dataIn = $rtoi(127*$sin(i*j*3.14159/1024));
-        end
+    #10000 dataIn = 2**(WIDTH-1)-1;
+    #10000 dataIn = -2**(WIDTH-1);
+    #10000
+    for (i=1; i<2**16; i=i+1) begin
+        @(posedge clk) dataIn = $rtoi($sin($itor(i)**2*3.14159/FREQ_RATE)*(2**(WIDTH-2)-1));
     end
+    for (i=1; i<2**16; i=i+1) begin
+        @(posedge clk) dataIn = $random();
+    end
+    $stop();
 end
 
 always #1 clk = ~clk;
 
 SmallLpf #(
-    .WIDTH(8),
-    .FILT_BITS(5)
+    .WIDTH(WIDTH),
+    .FILT_BITS(FILT_BITS)
 )
 uut (
-    .clk(clk),                       // System clock
-    .rst(rst),                       // Reset, active high and synchronous
-    .en(en),                        // Filter enable
-    .dataIn(dataIn),  ///< [WIDTH-1:0] // Filter input
-    .dataOut(dataOut)  ///< [WIDTH-1:0] // Filter output
+    .clk(clk),        ///< System clock
+    .rst(rst),        ///< Reset, active high and synchronous
+    .en(en),          ///< Filter enable
+    .dataIn(dataIn),  ///< [WIDTH-1:0] Filter input
+    .dataOut(dataOut) ///< [WIDTH-1:0] Filter output
 );
 
 endmodule

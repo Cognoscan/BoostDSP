@@ -77,7 +77,7 @@ comparison (
     .sdOut(sdOutComp)
 );
 
-sinc3Filter #(
+Sinc3Filter #(
     .OSR(32) // Output width is 3*ceil(log2(OSR))+1
 )
 filterOut (

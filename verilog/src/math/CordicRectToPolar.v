@@ -43,6 +43,7 @@ smaller than the LSB of the output angle word, the algorithm would be adding +/-
 */
 
 module CordicRectToPolar #(
+    parameter STAGES          = 1,  ///< Number of stages in CORDIC
     parameter IN_WIDTH        = 16, ///< Input coordinate pair width
     parameter ANGLE_WIDTH     = 16, ///< Output angle register width
     parameter SCALE_MAGNITUDE = 0,  ///< Set to 1 to scale magnitude to true value
@@ -66,18 +67,20 @@ parameter ITER_NUM   = (IN_WIDTH > (ANGLE_WIDTH-1)) ? (ANGLE_WIDTH-1) : IN_WIDTH
 parameter ITER_WIDTH = $clog2(ITER_NUM);
 parameter M_PI       = $acos(-1.0);
 
+localparam STAGES_INT = (ITER_NUM > STAGES) ? STAGES : ITER_NUM; // Max out at `ITER_NUM` of stages
+
 //////////////////////////////////////////////////////////////////////////////
 // Constant Declarations (calculated on start)
 //////////////////////////////////////////////////////////////////////////////
-reg [MULT_WIDTH-1:0] MAG_SCALE; ///< Magnitude Scalar
+reg [MULT_WIDTH-1:0] MAG_SCALE;                    ///< Magnitude Scalar
 reg [ANGLE_WIDTH-1:0] ANGLE_LOOKUP [ITER_NUM-1:0]; ///< Angle lookup table
 
 //////////////////////////////////////////////////////////////////////////////
 // Signal Declarations
 //////////////////////////////////////////////////////////////////////////////
-reg [ITER_WIDTH-1:0] iter; ///< Iteration counter
+reg [ITER_WIDTH-1:0] iter;      ///< Iteration counter
 reg [ANGLE_WIDTH-1:0] angleReg; ///< Angle register
-reg signed [IN_WIDTH:0] xReg; ///< X coordinate working register
+reg signed [IN_WIDTH:0] xReg;   ///< X coordinate working register
 reg signed [IN_WIDTH-1:0] yReg; ///< Y coordinate working register
 reg doneD1;
 
