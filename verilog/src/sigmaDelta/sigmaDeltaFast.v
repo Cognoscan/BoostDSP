@@ -1,4 +1,4 @@
-module sigmaDeltaFast #(
+module SigmaDeltaFast #(
     parameter WIDTH = 4,
     parameter OUTLEN = (1 << WIDTH)
 )

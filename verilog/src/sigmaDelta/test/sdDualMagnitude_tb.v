@@ -46,7 +46,7 @@ always @(posedge clk) begin
     ratio = (sqrtOut != 0) ? sqrtTrue/sqrtOut : sqrtTrue;
 end
 
-sigmaDelta2ndOrder #(
+SigmaDelta2ndOrder #(
     .WIDTH(16),
     .GROWTH(2)
 ) 
@@ -59,7 +59,7 @@ sinModulator
     .sdOut(inSin)
 );
 
-sigmaDelta2ndOrder #(
+SigmaDelta2ndOrder #(
     .WIDTH(16),
     .GROWTH(2)
 ) 

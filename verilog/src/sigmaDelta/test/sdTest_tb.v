@@ -48,7 +48,7 @@ always @(posedge clk) testFunc2 = (signal > 0) ? signal : -signal;
 always @(posedge clk) testFunc3 = signal**2;
 always @(posedge clk) testFunc4 = $ln($itor(out));
 
-sigmaDelta2ndOrder #(
+SigmaDelta2ndOrder #(
     .WIDTH(16),
     .GROWTH(2)
 ) 

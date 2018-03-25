@@ -1,4 +1,4 @@
-module sigmaDeltaFast_tb ();
+module SigmaDeltaFast_tb ();
 
 parameter WIDTH = 4;
 parameter OUTLEN = (1 << WIDTH);
@@ -54,7 +54,7 @@ initial begin
     #10000 $stop();
 end
 
-sigmaDeltaFast #(
+SigmaDeltaFast #(
     .WIDTH(WIDTH),
     .OUTLEN(OUTLEN)
 )
@@ -66,7 +66,7 @@ uut (
     .sdOut(sdOut) ///< [OUTLEN-1:0] Sigma delta stream, LSB=first sample, MSB=last sample
 );
 
-sigmaDelta1stOrder #(
+SigmaDelta1stOrder #(
     .WIDTH(WIDTH)
 ) 
 comparison (

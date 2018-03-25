@@ -41,7 +41,7 @@ end
 integer squared;
 always @(posedge clk) squared = signal**2;
 
-sigmaDelta2ndOrder #(
+SigmaDelta2ndOrder #(
     .WIDTH(8),
     .GROWTH(2)
 ) 
