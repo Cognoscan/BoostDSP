@@ -78,7 +78,7 @@ end
 FileSource #(
     .FILE_NAME(FILE_NAME),
     .OUT_WIDTH(OUT_WIDTH),
-    .OUT_NUM  (OUT_NUM  )
+    .OUT_NUM  (OUT_NUM  ),
     .CYCLE    (CYCLE    )
 )
 uut (
