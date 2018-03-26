@@ -1,17 +1,24 @@
+
+
+
 module SigmaDelta1stOrder #(
-    parameter WIDTH = 16,
-    parameter OUT_WIDTH = 1
+    parameter IS_LIMITED = 0,   ///< 1 if input is limited in range
+    parameter IN_WIDTH   = 16,  ///< Width of input
+    parameter OUT_WIDTH  = 1    ///< Width of sigma-delta compressed output
 ) 
 (
     input clk,
     input rst,
     input en,
-    input signed [WIDTH-1:0] in,
+    input signed [IN_WIDTH-1:0] in,
     output signed [OUT_WIDTH-1:0] sdOut
 );
 
-wire [WIDTH-1:0] unsignedIn;
-reg [WIDTH-OUT_WIDTH:0] acc;
+localparam LIMIT = (IS_LIMITED && (OUT_WIDTH != 1)) ? 1 : 0;
+
+localparam ACC_MSB = LIMIT ? (IN_WIDTH-OUT_WIDTH-1) : (IN_WIDTH-OUT_WIDTH);
+
+reg [ACC_MSB:0] acc;
 reg signed [OUT_WIDTH-1:0] sd;
 
 initial begin
@@ -19,14 +26,22 @@ initial begin
     sd = 'd0;
 end
 
-assign unsignedIn = {~in[WIDTH-1], in[WIDTH-2:0]};
+assign unsignedIn = {in[IN_WIDTH-1], in[IN_WIDTH-2:0]};
 
 always @(posedge clk) begin
     if (rst) begin
-        acc   <= 1 << (WIDTH-OUT_WIDTH);
-        sd <= 'd0;
+        acc <= 1 << (ACC_MSB);
+        sd  <= 'd0;
     end else if (en) begin
-        {sd, acc} <= acc + unsignedIn;
+        if (LIMIT) begin
+            {sd, acc} <= $signed({1'b0, acc}) + in;
+        end
+        else if (OUT_WIDTH > 1) begin
+            {sd, acc} <= $signed({1'b0, ~acc[ACC_MSB], acc[ACC_MSB-1:0]}) + in;
+        end
+        else begin
+            {sd, acc} <= $signed({~acc[ACC_MSB], acc[ACC_MSB-1:0]}) + in;
+        end
     end
 end
 
