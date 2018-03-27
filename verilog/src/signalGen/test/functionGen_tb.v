@@ -1,13 +1,19 @@
 module functionGen_tb ();
 
+parameter BIT_COMPRESS = 1;
+parameter OUT_WIDTH = 8;
+parameter FREQ_WIDTH = 16;
+parameter INCLUDE_CLAMP = 1'b1;
+
 reg clk;
 reg rst;
 reg en;
 reg [1:0] waveType;
-reg [7:0] freq;
-reg signed [7:0] offset;
-reg [7:0] amplitude;
-wire signed [7:0] outSignal;
+reg [FREQ_WIDTH-1:0] freq;
+reg [FREQ_WIDTH-1:0] phaseOffset;
+reg signed [OUT_WIDTH-1:0] offset;
+reg [OUT_WIDTH-1:0] amplitude;
+wire signed [OUT_WIDTH-1:0] outSignal;
 integer i;
 
 always #1 clk = ~clk;
@@ -18,51 +24,50 @@ initial begin
     en = 1'b1;
     waveType = 2'd0;
     freq = 'd0;
+    phaseOffset = 'd0;
     offset = 'd0;
     amplitude = 'd0;
     #10
     rst = 1'b0;
     for (i=0; i<4; i=i+1) begin
         waveType = i;
-        freq = 'd1;
+        freq = 1 << (FREQ_WIDTH-12);
         offset = 'd0;
         amplitude = ~0;
-        #1000
+        #20000
         waveType = i;
     end
     waveType = 'd0;
-    offset = 8'h40;
-    amplitude = ~0;
-    #1000
+    offset = {2'b01, {OUT_WIDTH-2{1'b0}}}; // 1/2 max positive offset
+    #20000
     waveType = 'd0;
-    offset = 8'h7F;
-    amplitude = ~0;
-    #1000
-    offset = 8'h80;
-    amplitude = ~0;
-    #1000
-    offset = 8'h00;
-    amplitude = 1;
-    #1000
+    offset = {1'b0, {OUT_WIDTH-1{1'b1}}}; // max positive offset
+    #20000
+    offset = {1'b1, {OUT_WIDTH-1{1'b0}}}; // max negative offset
+    #20000
+    offset = 'd0;
+    #20000
     $stop(2);
 end
 
 functionGen #(
-    .OUT_WIDTH(8),      // Output word width
-    .FREQ_WIDTH(8),     // Input frequency word width
-    .INCLUDE_CLAMP(1'b1) // Clamp the output to prevent wraparound
+    .BIT_COMPRESS(BIT_COMPRESS),
+    .OUT_WIDTH(OUT_WIDTH),        ///< Output word width
+    .FREQ_WIDTH(FREQ_WIDTH),      ///< Input frequency word width
+    .INCLUDE_CLAMP(INCLUDE_CLAMP) ///< Clamp the output to prevent wraparound
 )
 uut (
     // Inputs
-    .clk(clk),                       // System clock
-    .rst(rst),                       // Synchronous reset, active high
-    .en(en),                        // Output next sample when high
-    .waveType(waveType),             ///< [1:0] // Waveform type (see top description)
-    .freq(freq),      ///< [FREQ_WIDTH-1:0] // Frequency
-    .offset(offset),     ///< [OUT_WIDTH-1:0] // Offset value
-    .amplitude(amplitude),  ///< [OUT_WIDTH-1:0] // Amplitude of waveform
+    .clk(clk),                 ///< System clock
+    .rst(rst),                 ///< Synchronous reset, active high
+    .en(en),                   ///< Output next sample when high
+    .waveType(waveType),       ///< [1:0] Waveform type (see top description)
+    .freq(freq),               ///< [FREQ_WIDTH-1:0] Frequency
+    .phaseOffset(phaseOffset), ///< [FREQ_WIDTH-1;0] Phase offset
+    .offset(offset),           ///< [OUT_WIDTH-1:0] Offset value
+    .amplitude(amplitude),     ///< [OUT_WIDTH-1:0] Amplitude of waveform
     // Outputs
-    .outSignal(outSignal) ///< [OUT_WIDTH-1:0] 
+    .outSignal(outSignal)      ///< [OUT_WIDTH-1:0]
 );
 
 endmodule
