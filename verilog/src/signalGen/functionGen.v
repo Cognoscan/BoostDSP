@@ -2,14 +2,21 @@
 Function Generator
 ==================
 
-Simple function generator for debugging use. Provides 4 waveform types, with an 
-adjustable frequency, phase offset, amplitude, and offset. Dithering is utilized 
-to ensure true reproduction of the waveform at low amplitudes, akin to acting as 
-an OUT_WIDTH+18 bit to OUT_WIDTH bit compressor / 1st-order sigma-delta 
-modulator.
+This is a simple function generator for debugging use. It provides 4 waveform 
+types, with an adjustable frequency, phase offset, amplitude, and offset. 
+
+Dithering / Bit Compression
+---------------------------
+Dithering is utilized to ensure true reproduction of the waveform at low 
+amplitudes, akin to acting as an `OUT_WIDTH+18` bit to `OUT_WIDTH` bit compressor 
+/ 1st-order sigma-delta modulator. This shapes truncation noise, pushing it to 
+higher frequencies. If a flat truncation noise profile is desired, it can be 
+worth disabling this by setting `BIT_COMPRESS_OUTPUT` to 0. Generally, if the use 
+case requires frequencies above 1/32 of the sample rate, or primarily operates 
+above 1/64 of the sample rate, this should be bypassed.
 
 The phase word is also compressed when used as the phase input into the sine 
-lookup table. This can be bypassed by setting BIT_COMPRESS to 0.
+lookup table. This can be bypassed by setting `BIT_COMPRESS_PHASE` to 0.
 
 Clamping the Output
 -------------------
@@ -19,10 +26,11 @@ out if:
 
 - offset + (amplitude/2) < 2^OUT_WIDTH-2
 - offset - (amplitude/2) > -2^OUT_WIDTH + 1
-- amplitude < 2^OUT_WIDTH - 2
+- amplitude < 2^OUT_WIDTH - 2 (only if `BIT_COMPRESS_OUTPUT` set to 1)
 
 To be clear, the amplitude MUST not be at its maximum value. Otherwise the bit 
-compressor can cause overflow to occur.
+compressor can cause overflow to occur. This is not a problem if the bit 
+compressor is not used.
 
 Waveform Selection
 ------------------
@@ -35,14 +43,23 @@ Possible Waveforms:
 | 2        | Square      |
 | 3        | Sawtooth    |
 
+Architecture Selection
+----------------------
+
+the `ARCH` parameter is meant for future optimization for various logic 
+architectures. The current system is optimized for Spartan 6 and 7-Series Xilinx 
+parts (`XIL_SPARTAN6` and `XIL_7SERIES`). If supporting another architecture, 
+this module will need to be extended.
+
 Notes on Internals
 ------------------
 For the sake of keeping BRAM usage low, the internal sine table is limited to 
 a 10bx18b quarter-wave look-up table. If this needs to be adjusted, modify the 
-ANGLE_WIDTH and SINE_WIDTH local parameters. You will likely not need to do this.
+`ANGLE_WIDTH` and `SINE_WIDTH` local parameters. You will likely not need to do 
+this.
 
 For the amplitude scaling, a multiplier with an 18-bit wide internal input is 
-assumed. This can be adjusted using the LOCAL_WIDTH parameter.
+assumed. This can be adjusted using the `LOCAL_WIDTH` parameter.
 
 The offset & error feedback for the bit compressor are concatenated to form 
 a single value to add to the scaled signal value. The resulting multiply + add 
@@ -54,11 +71,12 @@ to be modified to use the ARCH parameter to specifically instantiate a DSP block
 
 
 module functionGen #(
-    parameter ARCH = "GENERIC",    ///< System architecture
-    parameter BIT_COMPRESS = 1,    ///< 1 for bit compression, 0 for truncation
-    parameter OUT_WIDTH = 16,      ///< Output word width
-    parameter FREQ_WIDTH = 16,     ///< Input frequency word width
-    parameter INCLUDE_CLAMP = 1'b1 ///< Clamp the output to prevent wraparound
+    parameter ARCH                = "GENERIC", ///< System architecture
+    parameter BIT_COMPRESS_PHASE  = 1,         ///< 1 for bit compression, 0 for truncation
+    parameter BIT_COMPRESS_OUTPUT = 1,         ///< 1 for bit compression, 0 for truncation
+    parameter OUT_WIDTH           = 16,        ///< Output word width
+    parameter FREQ_WIDTH          = 16,        ///< Input frequency word width
+    parameter INCLUDE_CLAMP       = 1          ///< Clamp the output to prevent wraparound
 )
 (
     // Inputs
@@ -77,6 +95,34 @@ module functionGen #(
 ///////////////////////////////////////////////////////////////////////////
 // PARAMETER DECLARATIONS
 ///////////////////////////////////////////////////////////////////////////
+
+// Verify Parameters are correct
+initial begin
+    if (ARCH != "GENERIC" && ARCH != "XIL_7SERIES" && ARCH != "XIL_SPARTAN6") begin
+        $display("Attribute ARCH on functionGen instance %m is set to %s. Valid values are GENERIC, XIL_7SERIES, and XIL_SPARTAN6.", ARCH);
+        #1 $finish;
+    end
+    if (BIT_COMPRESS_PHASE != 0 && BIT_COMPRESS_PHASE != 1) begin
+        $display("Attribute BIT_COMPRESS_PHASE on functionGen instance %m is set to %i. Valid values are 0 and 1.", BIT_COMPRESS_PHASE);
+        #1 $finish;
+    end
+    if (BIT_COMPRESS_OUTPUT != 0 && BIT_COMPRESS_OUTPUT != 1) begin
+        $display("Attribute BIT_COMPRESS_OUTPUT on functionGen instance %m is set to %i. Valid values are 0 and 1.", BIT_COMPRESS_OUTPUT);
+        #1 $finish;
+    end
+    if (OUT_WIDTH < 3) begin
+        $display("Attribute OUT_WIDTH on functionGen instance %m is set to %i. Must be at least 3.", OUT_WIDTH);
+        #1 $finish;
+    end
+    if (FREQ_WIDTH < 4) begin
+        $display("Attribute FREQ_WIDTH on functionGen instance %m is set to %i. Must be at least 4.", FREQ_WIDTH);
+        #1 $finish;
+    end
+    if (INCLUDE_CLAMP != 0 && INCLUDE_CLAMP != 1) begin
+        $display("Attribute INCLUDE_CLAMP on functionGen instance %m is set to %i. Valid values are 0 and 1.", INCLUDE_CLAMP);
+        #1 $finish;
+    end
+end
 
 // Reference parameters for wave type
 localparam WAVE_SINE     = 0;
@@ -120,15 +166,6 @@ integer i;
 // MAIN CODE
 ///////////////////////////////////////////////////////////////////////////
 
-// Final output signal is either the clamped signal or the truncated signal
-if (INCLUDE_CLAMP) begin
-    assign outSignal = clampedSignal;
-end
-else begin
-    assign outSignal = wideSignalWord[WIDE_WIDTH-1-:OUT_WIDTH];
-end
-
-
 always @(posedge clk) begin
     if (rst) begin
         phase          <= 'd0;
@@ -158,8 +195,15 @@ always @(posedge clk) begin
 
         // Scale value based on amplitude word, then add offset & feedback the 
         // truncated bits (bit compressor)
-        wideSignalWord <= unscaledSignal * $signed({1'b0, amplitude}) 
-                        + $signed({offset, wideSignalWord[LOCAL_WIDTH-1:0]});
+        if (BIT_COMPRESS_OUTPUT) begin
+            wideSignalWord <= unscaledSignal * $signed({1'b0, amplitude}) 
+                            + $signed({offset, wideSignalWord[LOCAL_WIDTH-1:0]});
+        end
+        else begin
+            // Skip bit compressor (don't feed back the truncated bits)
+            wideSignalWord <= unscaledSignal * $signed({1'b0, amplitude}) 
+                            + $signed({offset, {LOCAL_WIDTH{1'b0}}});
+        end
 
         // Clamp the scaled value with offset. Not needed if user knows the offset + scaled value will never overflow
         // Clamp if top three bits don't all match
@@ -168,6 +212,14 @@ always @(posedge clk) begin
                         :  wideSignalWord[WIDE_WIDTH-1-:OUT_WIDTH];
 
     end
+end
+
+// Final output signal is either the clamped signal or the truncated signal
+if (INCLUDE_CLAMP) begin
+    assign outSignal = clampedSignal;
+end
+else begin
+    assign outSignal = wideSignalWord[WIDE_WIDTH-1-:OUT_WIDTH];
 end
 
 ///////////////////////////////////////////////////////////////////////////
@@ -179,7 +231,7 @@ if (ANGLE_WIDTH+2 >= FREQ_WIDTH) begin
         sdPhase = phase << (ANGLE_WIDTH+2-FREQ_WIDTH);
     end
 end
-else if (BIT_COMPRESS) begin
+else if (BIT_COMPRESS_PHASE) begin
     reg [(FREQ_WIDTH-ANGLE_WIDTH-3):0] sdPhaseAcc;
     always @(posedge clk) begin
         if (rst) begin
@@ -205,7 +257,7 @@ end
 // XOR phase as part of quarter-wave lookup
 assign xorPhase = (phase[FREQ_WIDTH-2]) ? ~phase[FREQ_WIDTH-3:0] : phase[FREQ_WIDTH-3:0];
 
-if (BIT_COMPRESS) begin
+if (BIT_COMPRESS_PHASE) begin
     assign xorSdPhase = (sdPhase[ANGLE_WIDTH]) ? ~sdPhase[ANGLE_WIDTH-1:0] : sdPhase[ANGLE_WIDTH-1:0];
 end
 else begin

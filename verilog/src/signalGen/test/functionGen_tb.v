@@ -1,9 +1,11 @@
 module functionGen_tb ();
 
-parameter BIT_COMPRESS = 1;
+parameter ARCH = "GENERIC";
+parameter BIT_COMPRESS_PHASE = 1;
+parameter BIT_COMPRESS_OUTPUT = 1;
 parameter OUT_WIDTH = 8;
 parameter FREQ_WIDTH = 16;
-parameter INCLUDE_CLAMP = 1'b1;
+parameter INCLUDE_CLAMP = 1;
 
 reg clk;
 reg rst;
@@ -51,10 +53,12 @@ initial begin
 end
 
 functionGen #(
-    .BIT_COMPRESS(BIT_COMPRESS),
-    .OUT_WIDTH(OUT_WIDTH),        ///< Output word width
-    .FREQ_WIDTH(FREQ_WIDTH),      ///< Input frequency word width
-    .INCLUDE_CLAMP(INCLUDE_CLAMP) ///< Clamp the output to prevent wraparound
+    .ARCH(ARCH),                               ///< System architecture
+    .BIT_COMPRESS_PHASE(BIT_COMPRESS_PHASE),   ///< 1 for bit compression, 0 for truncation
+    .BIT_COMPRESS_OUTPUT(BIT_COMPRESS_OUTPUT), ///< 1 for bit compression, 0 for truncation
+    .OUT_WIDTH(OUT_WIDTH),                     ///< Output word width
+    .FREQ_WIDTH(FREQ_WIDTH),                   ///< Input frequency word width
+    .INCLUDE_CLAMP(INCLUDE_CLAMP)              ///< Clamp the output to prevent wraparound
 )
 uut (
     // Inputs
