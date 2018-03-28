@@ -22,13 +22,22 @@ The filters are multirate, downsampling after each filter pair. To save on
 resources, the filter calculation steps are interleaved. New samples are 
 available on the corresponding bit in `outStrobes`.
 
+Usage Notes
+-----------
+- The enable strobe (`en`) *must* be 1 clock wide and occur no more than once 
+  every 2 clock cycles!
+- It is recommended to use an `INTERNAL_WIDTH` wider than `IN_WIDTH`. To 
+  completely preserve bits, make `INTERNAL_WIDTH` `STAGES` bits wider than 
+  `IN_WIDTH`.
+
+
 */
 
 module HaarFilter #(
-    parameter STAGES = 4,
-    parameter INTERNAL_WIDTH = 18,
-    parameter IN_WIDTH = 16,
-    parameter OUT_WIDTH = 16
+    parameter STAGES         = 4,  ///< Number of stages
+    parameter INTERNAL_WIDTH = 18, ///< Internal bit width used for calculations
+    parameter IN_WIDTH       = 16, ///< Width of input signal
+    parameter OUT_WIDTH      = 16  ///< Width of output signals from filter bank
 )
 (
     input clk,                                    ///< System clock
@@ -42,6 +51,26 @@ module HaarFilter #(
 ///////////////////////////////////////////////////////////////////////////
 // Parameter Declarations
 ///////////////////////////////////////////////////////////////////////////
+
+// Verify Parameters are correct
+initial begin
+    if (STAGES < 2 || STAGES > 8) begin
+        $display("Attribute STAGES on HaarFilter instance %m is set to %i. Valid range is 2 to 8", STAGES);
+        #1 $finish;
+    end
+    if (INTERNAL_WIDTH < 2) begin
+        $display("Attribute INTERNAL_WIDTH on HaarFilter instance %m is set to %i. Must be at least 2.", INTERNAL_WIDTH);
+        #1 $finish;
+    end
+    if (IN_WIDTH < 2) begin
+        $display("Attribute IN_WIDTH on HaarFilter instance %m is set to %i. Must be at least 2.", IN_WIDTH);
+        #1 $finish;
+    end
+    if (OUT_WIDTH < 2) begin
+        $display("Attribute OUT_WIDTH on HaarFilter instance %m is set to %i. Must be at least 2.", OUT_WIDTH);
+        #1 $finish;
+    end
+end
 
 ///////////////////////////////////////////////////////////////////////////
 // Signal Declarations
