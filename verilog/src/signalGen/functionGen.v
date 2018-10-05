@@ -103,23 +103,23 @@ initial begin
         #1 $finish;
     end
     if (BIT_COMPRESS_PHASE != 0 && BIT_COMPRESS_PHASE != 1) begin
-        $display("Attribute BIT_COMPRESS_PHASE on functionGen instance %m is set to %i. Valid values are 0 and 1.", BIT_COMPRESS_PHASE);
+        $display("Attribute BIT_COMPRESS_PHASE on functionGen instance %m is set to %d. Valid values are 0 and 1.", BIT_COMPRESS_PHASE);
         #1 $finish;
     end
     if (BIT_COMPRESS_OUTPUT != 0 && BIT_COMPRESS_OUTPUT != 1) begin
-        $display("Attribute BIT_COMPRESS_OUTPUT on functionGen instance %m is set to %i. Valid values are 0 and 1.", BIT_COMPRESS_OUTPUT);
+        $display("Attribute BIT_COMPRESS_OUTPUT on functionGen instance %m is set to %d. Valid values are 0 and 1.", BIT_COMPRESS_OUTPUT);
         #1 $finish;
     end
     if (OUT_WIDTH < 3) begin
-        $display("Attribute OUT_WIDTH on functionGen instance %m is set to %i. Must be at least 3.", OUT_WIDTH);
+        $display("Attribute OUT_WIDTH on functionGen instance %m is set to %d. Must be at least 3.", OUT_WIDTH);
         #1 $finish;
     end
     if (FREQ_WIDTH < 4) begin
-        $display("Attribute FREQ_WIDTH on functionGen instance %m is set to %i. Must be at least 4.", FREQ_WIDTH);
+        $display("Attribute FREQ_WIDTH on functionGen instance %m is set to %d. Must be at least 4.", FREQ_WIDTH);
         #1 $finish;
     end
     if (INCLUDE_CLAMP != 0 && INCLUDE_CLAMP != 1) begin
-        $display("Attribute INCLUDE_CLAMP on functionGen instance %m is set to %i. Valid values are 0 and 1.", INCLUDE_CLAMP);
+        $display("Attribute INCLUDE_CLAMP on functionGen instance %m is set to %d. Valid values are 0 and 1.", INCLUDE_CLAMP);
         #1 $finish;
     end
 end

@@ -55,19 +55,19 @@ module HaarFilter #(
 // Verify Parameters are correct
 initial begin
     if (STAGES < 2 || STAGES > 8) begin
-        $display("Attribute STAGES on HaarFilter instance %m is set to %i. Valid range is 2 to 8", STAGES);
+        $display("Attribute STAGES on HaarFilter instance %m is set to %d. Valid range is 2 to 8", STAGES);
         #1 $finish;
     end
     if (INTERNAL_WIDTH < 2) begin
-        $display("Attribute INTERNAL_WIDTH on HaarFilter instance %m is set to %i. Must be at least 2.", INTERNAL_WIDTH);
+        $display("Attribute INTERNAL_WIDTH on HaarFilter instance %m is set to %d. Must be at least 2.", INTERNAL_WIDTH);
         #1 $finish;
     end
     if (IN_WIDTH < 2) begin
-        $display("Attribute IN_WIDTH on HaarFilter instance %m is set to %i. Must be at least 2.", IN_WIDTH);
+        $display("Attribute IN_WIDTH on HaarFilter instance %m is set to %d. Must be at least 2.", IN_WIDTH);
         #1 $finish;
     end
     if (OUT_WIDTH < 2) begin
-        $display("Attribute OUT_WIDTH on HaarFilter instance %m is set to %i. Must be at least 2.", OUT_WIDTH);
+        $display("Attribute OUT_WIDTH on HaarFilter instance %m is set to %d. Must be at least 2.", OUT_WIDTH);
         #1 $finish;
     end
 end
